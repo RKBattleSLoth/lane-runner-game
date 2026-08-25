@@ -88,16 +88,22 @@ class Game {
     }
 
     gameLoop(currentTime) {
-        // Calculate delta time
-        const deltaTime = currentTime - this.lastTime;
-        this.lastTime = currentTime;
+        try {
+            // Calculate delta time
+            const deltaTime = currentTime - this.lastTime;
+            this.lastTime = currentTime;
 
-        // Update and render
-        this.update(deltaTime);
-        this.render();
+            // Update and render
+            this.update(deltaTime);
+            this.render();
 
-        // Continue loop
-        requestAnimationFrame((time) => this.gameLoop(time));
+            // Continue loop
+            requestAnimationFrame((time) => this.gameLoop(time));
+        } catch (e) {
+            console.error('Game loop error:', e);
+            // Continue loop even if there's an error
+            requestAnimationFrame((time) => this.gameLoop(time));
+        }
     }
 
     update(deltaTime) {
@@ -109,10 +115,14 @@ class Game {
             this.stats.maxArmy = this.player.army;
         }
 
-        // Update A/V systems
-        this.particleSystem.update(deltaTime);
-        this.screenShake.update(deltaTime);
-        this.projectileTrails.update();
+        // Update A/V systems with error handling
+        try {
+            this.particleSystem.update(deltaTime);
+            this.screenShake.update(deltaTime);
+            this.projectileTrails.update();
+        } catch (e) {
+            console.error('A/V system error:', e);
+        }
 
         // Update player
         this.player.update(deltaTime, this.keys, this);
@@ -151,37 +161,43 @@ class Game {
     }
 
     render() {
-        // Apply screen shake
-        this.ctx.save();
-        this.screenShake.apply(this.ctx);
+        try {
+            // Apply screen shake
+            this.ctx.save();
+            this.screenShake.apply(this.ctx);
 
-        // Draw scrolling background
-        this.background.draw(this.ctx);
+            // Draw scrolling background
+            this.background.draw(this.ctx);
 
-        // Draw playfield boundaries
-        this.drawPlayfieldBoundaries();
+            // Draw playfield boundaries
+            this.drawPlayfieldBoundaries();
 
-        // Draw progress bar
-        this.drawProgressBar();
+            // Draw progress bar
+            this.drawProgressBar();
 
-        // Draw projectile trails (behind projectiles)
-        this.projectileTrails.draw(this.ctx);
+            // Draw projectile trails (behind projectiles)
+            this.projectileTrails.draw(this.ctx);
 
-        // Draw game objects
-        this.gateManager.draw(this.ctx);
-        this.enemyManager.draw(this.ctx);
-        this.player.draw(this.ctx);
+            // Draw game objects
+            this.gateManager.draw(this.ctx);
+            this.enemyManager.draw(this.ctx);
+            this.player.draw(this.ctx);
 
-        // Draw boss if active
-        if (this.state === 'boss' && this.boss && this.boss.active) {
-            this.drawBoss();
+            // Draw boss if active
+            if (this.state === 'boss' && this.boss && this.boss.active) {
+                this.drawBoss();
+            }
+
+            // Draw particles on top
+            this.particleSystem.draw(this.ctx);
+
+            // Restore context (remove screen shake)
+            this.ctx.restore();
+        } catch (e) {
+            console.error('Render error:', e);
+            // Make sure to restore context even if there's an error
+            this.ctx.restore();
         }
-
-        // Draw particles on top
-        this.particleSystem.draw(this.ctx);
-
-        // Restore context (remove screen shake)
-        this.ctx.restore();
     }
 
     drawBoss() {

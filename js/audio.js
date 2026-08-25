@@ -28,15 +28,16 @@ class AudioSystem {
 
     // Procedural sound generation
     playShoot(weaponType) {
-        if (!this.enabled) return;
+        if (!this.enabled || !this.context) return;
 
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
+        try {
+            const oscillator = this.context.createOscillator();
+            const gainNode = this.context.createGain();
 
-        oscillator.connect(gainNode);
-        gainNode.connect(this.context.destination);
+            oscillator.connect(gainNode);
+            gainNode.connect(this.context.destination);
 
-        gainNode.gain.value = this.sfxVolume * 0.3;
+            gainNode.gain.value = this.sfxVolume * 0.3;
 
         // Different sounds per weapon
         switch(weaponType) {
@@ -71,13 +72,17 @@ class AudioSystem {
         }
 
         oscillator.start();
+        } catch (e) {
+            console.error('Audio playShoot error:', e);
+        }
     }
 
     playEnemyDeath(enemyType) {
-        if (!this.enabled) return;
+        if (!this.enabled || !this.context) return;
 
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
+        try {
+            const oscillator = this.context.createOscillator();
+            const gainNode = this.context.createGain();
 
         oscillator.connect(gainNode);
         gainNode.connect(this.context.destination);
@@ -108,73 +113,14 @@ class AudioSystem {
 
         oscillator.type = 'sawtooth';
         oscillator.start();
+        } catch (e) {
+            console.error('Audio playEnemyDeath error:', e);
+        }
     }
 
     playGatePickup() {
-        if (!this.enabled) return;
-
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(this.context.destination);
-
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(400, this.context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(800, this.context.currentTime + 0.1);
-
-        gainNode.gain.value = this.sfxVolume * 0.3;
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.2);
-
-        oscillator.start();
-        oscillator.stop(this.context.currentTime + 0.2);
-    }
-
-    playBossRoar() {
-        if (!this.enabled) return;
-
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(this.context.destination);
-
-        oscillator.type = 'sawtooth';
-        oscillator.frequency.setValueAtTime(100, this.context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 0.5);
-
-        gainNode.gain.value = this.sfxVolume * 0.4;
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
-
-        oscillator.start();
-        oscillator.stop(this.context.currentTime + 0.5);
-    }
-
-    playBossHit() {
-        if (!this.enabled) return;
-
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(this.context.destination);
-
-        oscillator.type = 'square';
-        oscillator.frequency.value = 150;
-
-        gainNode.gain.value = this.sfxVolume * 0.3;
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
-
-        oscillator.start();
-        oscillator.stop(this.context.currentTime + 0.1);
-    }
-
-    playVictory() {
-        if (!this.enabled) return;
-
-        // Victory arpeggio
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
-        notes.forEach((freq, i) => {
+        if (!this.enabled || !this.context) return;
+        try {
             const oscillator = this.context.createOscillator();
             const gainNode = this.context.createGain();
 
@@ -182,36 +128,113 @@ class AudioSystem {
             gainNode.connect(this.context.destination);
 
             oscillator.type = 'sine';
-            oscillator.frequency.value = freq;
+            oscillator.frequency.setValueAtTime(400, this.context.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, this.context.currentTime + 0.1);
 
-            const startTime = this.context.currentTime + (i * 0.15);
-            gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(this.sfxVolume * 0.3, startTime + 0.01);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+            gainNode.gain.value = this.sfxVolume * 0.3;
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.2);
 
-            oscillator.start(startTime);
-            oscillator.stop(startTime + 0.3);
-        });
+            oscillator.start();
+            oscillator.stop(this.context.currentTime + 0.2);
+        } catch (e) {
+            console.error('Audio playGatePickup error:', e);
+        }
+    }
+
+    playBossRoar() {
+        if (!this.enabled || !this.context) return;
+        try {
+            const oscillator = this.context.createOscillator();
+            const gainNode = this.context.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.context.destination);
+
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(100, this.context.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 0.5);
+
+            gainNode.gain.value = this.sfxVolume * 0.4;
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
+
+            oscillator.start();
+            oscillator.stop(this.context.currentTime + 0.5);
+        } catch (e) {
+            console.error('Audio playBossRoar error:', e);
+        }
+    }
+
+    playBossHit() {
+        if (!this.enabled || !this.context) return;
+        try {
+            const oscillator = this.context.createOscillator();
+            const gainNode = this.context.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.context.destination);
+
+            oscillator.type = 'square';
+            oscillator.frequency.value = 150;
+
+            gainNode.gain.value = this.sfxVolume * 0.3;
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
+
+            oscillator.start();
+            oscillator.stop(this.context.currentTime + 0.1);
+        } catch (e) {
+            console.error('Audio playBossHit error:', e);
+        }
+    }
+
+    playVictory() {
+        if (!this.enabled || !this.context) return;
+        try {
+            // Victory arpeggio
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
+            notes.forEach((freq, i) => {
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.value = freq;
+
+                const startTime = this.context.currentTime + (i * 0.15);
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(this.sfxVolume * 0.3, startTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+
+                oscillator.start(startTime);
+                oscillator.stop(startTime + 0.3);
+            });
+        } catch (e) {
+            console.error('Audio playVictory error:', e);
+        }
     }
 
     playDefeat() {
-        if (!this.enabled) return;
+        if (!this.enabled || !this.context) return;
+        try {
+            const oscillator = this.context.createOscillator();
+            const gainNode = this.context.createGain();
 
-        const oscillator = this.context.createOscillator();
-        const gainNode = this.context.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(this.context.destination);
 
-        oscillator.connect(gainNode);
-        gainNode.connect(this.context.destination);
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(200, this.context.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 1.0);
 
-        oscillator.type = 'sawtooth';
-        oscillator.frequency.setValueAtTime(200, this.context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 1.0);
+            gainNode.gain.value = this.sfxVolume * 0.3;
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 1.0);
 
-        gainNode.gain.value = this.sfxVolume * 0.3;
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 1.0);
-
-        oscillator.start();
-        oscillator.stop(this.context.currentTime + 1.0);
+            oscillator.start();
+            oscillator.stop(this.context.currentTime + 1.0);
+        } catch (e) {
+            console.error('Audio playDefeat error:', e);
+        }
     }
 
     // Simple background music loop
