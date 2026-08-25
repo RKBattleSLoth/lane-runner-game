@@ -7,6 +7,12 @@ class AudioSystem {
         this.sfxVolume = 0.5;
         this.currentMusic = null;
         this.musicGain = null;
+
+        // Throttling for frequent sounds
+        this.lastShootTime = 0;
+        this.shootThrottle = 50; // Only play shooting sound every 50ms max
+        this.lastEnemyDeathTime = 0;
+        this.enemyDeathThrottle = 30; // Only play enemy death every 30ms max
     }
 
     async init() {
@@ -30,6 +36,11 @@ class AudioSystem {
     playShoot(weaponType) {
         if (!this.enabled || !this.context) return;
 
+        // Throttle shooting sounds - too many audio nodes causes issues
+        const now = Date.now();
+        if (now - this.lastShootTime < this.shootThrottle) return;
+        this.lastShootTime = now;
+
         try {
             const oscillator = this.context.createOscillator();
             const gainNode = this.context.createGain();
@@ -37,35 +48,34 @@ class AudioSystem {
             oscillator.connect(gainNode);
             gainNode.connect(this.context.destination);
 
-            gainNode.gain.value = this.sfxVolume * 0.3;
-
-        // Different sounds per weapon
+        // Different sounds per weapon - reduce volume as shooting is frequent
+        const shootVolume = this.sfxVolume * 0.15;
         switch(weaponType) {
             case 'PISTOL':
                 oscillator.frequency.value = 200;
                 oscillator.type = 'square';
-                gainNode.gain.setValueAtTime(0.3, this.context.currentTime);
+                gainNode.gain.setValueAtTime(shootVolume * 0.8, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
                 oscillator.stop(this.context.currentTime + 0.1);
                 break;
             case 'RIFLE':
                 oscillator.frequency.value = 300;
                 oscillator.type = 'sawtooth';
-                gainNode.gain.setValueAtTime(0.3, this.context.currentTime);
+                gainNode.gain.setValueAtTime(shootVolume * 0.9, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.15);
                 oscillator.stop(this.context.currentTime + 0.15);
                 break;
             case 'MACHINE_GUN':
                 oscillator.frequency.value = 150;
                 oscillator.type = 'square';
-                gainNode.gain.setValueAtTime(0.2, this.context.currentTime);
+                gainNode.gain.setValueAtTime(shootVolume * 0.6, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.08);
                 oscillator.stop(this.context.currentTime + 0.08);
                 break;
             case 'SNIPER':
                 oscillator.frequency.value = 400;
                 oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.4, this.context.currentTime);
+                gainNode.gain.setValueAtTime(shootVolume, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.3);
                 oscillator.stop(this.context.currentTime + 0.3);
                 break;
@@ -80,6 +90,11 @@ class AudioSystem {
     playEnemyDeath(enemyType) {
         if (!this.enabled || !this.context) return;
 
+        // Throttle enemy death sounds - happens very frequently
+        const now = Date.now();
+        if (now - this.lastEnemyDeathTime < this.enemyDeathThrottle) return;
+        this.lastEnemyDeathTime = now;
+
         try {
             const oscillator = this.context.createOscillator();
             const gainNode = this.context.createGain();
@@ -87,25 +102,29 @@ class AudioSystem {
         oscillator.connect(gainNode);
         gainNode.connect(this.context.destination);
 
-        gainNode.gain.value = this.sfxVolume * 0.2;
+        // Reduce volume for enemy deaths
+        const deathVolume = this.sfxVolume * 0.15;
 
         // Different sounds based on enemy size
         switch(enemyType) {
             case 'SMALL':
                 oscillator.frequency.setValueAtTime(600, this.context.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(200, this.context.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(deathVolume * 0.7, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.1);
                 oscillator.stop(this.context.currentTime + 0.1);
                 break;
             case 'MEDIUM':
                 oscillator.frequency.setValueAtTime(400, this.context.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(100, this.context.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(deathVolume, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.2);
                 oscillator.stop(this.context.currentTime + 0.2);
                 break;
             case 'BOSS':
                 oscillator.frequency.setValueAtTime(200, this.context.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(50, this.context.currentTime + 0.4);
+                gainNode.gain.setValueAtTime(deathVolume * 1.5, this.context.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.4);
                 oscillator.stop(this.context.currentTime + 0.4);
                 break;
