@@ -12,6 +12,7 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <div id="error-display" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; padding: 10px; font-family: monospace; font-size: 11px; max-width: 300px; display: none; z-index: 1000;"></div>
         <div id="ui">
             <div id="stats">
                 <div id="army-count">ARMY: <span id="army-number">30</span></div>
@@ -40,5 +41,21 @@
     <script src="js/gates.js"></script>
     <script src="js/enemies.js"></script>
     <script src="js/game.js"></script>
+    <script>
+        // Capture console errors and display on screen
+        const errorDisplay = document.getElementById('error-display');
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            errorDisplay.style.display = 'block';
+            errorDisplay.textContent = args.join(' ');
+        };
+
+        window.onerror = function(msg, url, line, col, error) {
+            errorDisplay.style.display = 'block';
+            errorDisplay.textContent = `Error: ${msg}\nLine: ${line}\n${error ? error.stack : ''}`;
+            return false;
+        };
+    </script>
 </body>
 </html>
