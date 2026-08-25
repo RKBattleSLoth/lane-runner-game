@@ -1,0 +1,123 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Arial', sans-serif;
+    color: white;
+}
+
+#game-container {
+    position: relative;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+}
+
+#gameCanvas {
+    display: block;
+    background: #0f3460;
+    border: 3px solid #16213e;
+}
+
+#ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#stats {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+#army-count {
+    font-size: 24px;
+    color: #00ff00;
+    margin-bottom: 8px;
+}
+
+#weapon-info, #troop-info {
+    font-size: 16px;
+    color: #ffaa00;
+    margin-bottom: 4px;
+}
+
+#weapon-name, #troop-name {
+    color: #ffffff;
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 40px;
+    border-radius: 10px;
+    text-align: center;
+    pointer-events: all;
+}
+
+#game-over.hidden {
+    display: none;
+}
+
+#game-over h2 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #ff4757;
+}
+
+#game-over.victory h2 {
+    color: #00ff00;
+}
+
+#stats-display {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.stat-line {
+    font-size: 18px;
+    margin: 10px 0;
+    color: #aaa;
+}
+
+.stat-line span {
+    color: #fff;
+    font-weight: bold;
+}
+
+#restart-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    background: #00ff00;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+#restart-btn:hover {
+    background: #00dd00;
+}
+
+#restart-btn:active {
+    transform: scale(0.95);
+}
