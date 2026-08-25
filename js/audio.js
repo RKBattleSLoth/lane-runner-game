@@ -50,6 +50,9 @@ class AudioSystem {
 
         // Different sounds per weapon - reduce volume as shooting is frequent
         const shootVolume = this.sfxVolume * 0.15;
+
+        oscillator.start(); // Must start BEFORE scheduling stop
+
         switch(weaponType) {
             case 'PISTOL':
                 oscillator.frequency.value = 200;
@@ -80,8 +83,6 @@ class AudioSystem {
                 oscillator.stop(this.context.currentTime + 0.3);
                 break;
         }
-
-        oscillator.start();
         } catch (e) {
             console.error('Audio playShoot error:', e);
         }
@@ -104,6 +105,9 @@ class AudioSystem {
 
         // Reduce volume for enemy deaths
         const deathVolume = this.sfxVolume * 0.15;
+
+        oscillator.type = 'sawtooth';
+        oscillator.start(); // Must start BEFORE scheduling stop
 
         // Different sounds based on enemy size
         switch(enemyType) {
@@ -129,9 +133,6 @@ class AudioSystem {
                 oscillator.stop(this.context.currentTime + 0.4);
                 break;
         }
-
-        oscillator.type = 'sawtooth';
-        oscillator.start();
         } catch (e) {
             console.error('Audio playEnemyDeath error:', e);
         }
