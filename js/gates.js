@@ -298,7 +298,7 @@ class GateManager {
         this.gates.forEach(gate => gate.draw(ctx));
     }
 
-    checkCollisions(player) {
+    checkCollisions(player, game) {
         const playerBounds = player.getBounds();
 
         this.gates.forEach(gate => {
@@ -309,6 +309,16 @@ class GateManager {
             // Only apply collision effects for gates that don't require shooting (army gates)
             if (!gate.requiresShooting && this.checkCollision(playerBounds, gateBounds)) {
                 gate.applyEffect(player);
+                // Gate pickup effects (collision)
+                if (game) {
+                    const gateType = GATES.TYPES[gate.type];
+                    if (game.particleSystem) {
+                        game.particleSystem.createGateSparkle(gate.x, gate.y, gateType.color, 15);
+                    }
+                    if (game.audioSystem) {
+                        game.audioSystem.playGatePickup();
+                    }
+                }
             }
 
             // Check projectile collisions for gates that require shooting
@@ -318,6 +328,16 @@ class GateManager {
                         const destroyed = gate.takeDamage(projectile.damage);
                         if (destroyed) {
                             gate.applyEffect(player);
+                            // Gate pickup effects (shooting)
+                            if (game) {
+                                const gateType = GATES.TYPES[gate.type];
+                                if (game.particleSystem) {
+                                    game.particleSystem.createGateSparkle(gate.x, gate.y, gateType.color, 15);
+                                }
+                                if (game.audioSystem) {
+                                    game.audioSystem.playGatePickup();
+                                }
+                            }
                         }
 
                         // Handle piercing (gates don't consume piercing count)

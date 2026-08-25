@@ -249,7 +249,16 @@ class EnemyManager {
                     if (armyDamage > 0 && game) game.damageTaken = true;
                     player.modifyArmy(-armyDamage);
                     enemy.active = false;
-                    if (game) game.stats.enemiesKilled++;
+                    if (game) {
+                        game.stats.enemiesKilled++;
+                        // Enemy death effects (collision)
+                        if (game.particleSystem) {
+                            game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8);
+                        }
+                        if (game.audioSystem) {
+                            game.audioSystem.playEnemyDeath(enemy.type);
+                        }
+                    }
                 } else {
                     // Not enough power, player loses all troops
                     if (game) game.damageTaken = true;
@@ -263,7 +272,18 @@ class EnemyManager {
 
                 if (this.checkCollision(projectile, enemyBounds)) {
                     const killed = enemy.takeDamage(projectile.damage);
-                    if (killed && game) game.stats.enemiesKilled++;
+                    if (killed) {
+                        if (game) {
+                            game.stats.enemiesKilled++;
+                            // Enemy death effects (projectile)
+                            if (game.particleSystem) {
+                                game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8);
+                            }
+                            if (game.audioSystem) {
+                                game.audioSystem.playEnemyDeath(enemy.type);
+                            }
+                        }
+                    }
 
                     // Handle piercing
                     if (projectile.piercing > 0) {

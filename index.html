@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lane Runner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,25 +14,28 @@
         <canvas id="gameCanvas"></canvas>
         <div id="ui">
             <div id="stats">
-                <div id="army-count">Army: <span id="army-number">30</span></div>
-                <div id="weapon-info">Weapon: <span id="weapon-name">Pistol</span></div>
-                <div id="troop-info">Troop: <span id="troop-name">Soldier</span></div>
+                <div id="army-count">ARMY: <span id="army-number">30</span></div>
+                <div id="weapon-info">WEAPON: <span id="weapon-name">PISTOL</span></div>
+                <div id="troop-info">TROOP: <span id="troop-name">SOLDIER</span></div>
             </div>
             <div id="game-over" class="hidden">
-                <h2 id="game-over-text">Game Over</h2>
+                <h2 id="game-over-text">GAME OVER</h2>
                 <div id="stats-display">
-                    <div class="stat-line">Enemies Killed: <span id="stat-kills">0</span></div>
-                    <div class="stat-line">Max Army Size: <span id="stat-max-army">0</span></div>
-                    <div class="stat-line">Final Weapon: <span id="stat-weapon">-</span></div>
-                    <div class="stat-line">Final Troop: <span id="stat-troop">-</span></div>
-                    <div class="stat-line">Time Survived: <span id="stat-time">0s</span></div>
+                    <div class="stat-line">ENEMIES KILLED: <span id="stat-kills">0</span></div>
+                    <div class="stat-line">MAX ARMY SIZE: <span id="stat-max-army">0</span></div>
+                    <div class="stat-line">FINAL WEAPON: <span id="stat-weapon">-</span></div>
+                    <div class="stat-line">FINAL TROOP: <span id="stat-troop">-</span></div>
+                    <div class="stat-line">TIME: <span id="stat-time">0s</span></div>
                 </div>
-                <button id="restart-btn">Restart</button>
+                <button id="restart-btn">PLAY AGAIN</button>
             </div>
         </div>
     </div>
 
     <script src="js/constants.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/effects.js"></script>
     <script src="js/player.js"></script>
     <script src="js/gates.js"></script>
     <script src="js/enemies.js"></script>

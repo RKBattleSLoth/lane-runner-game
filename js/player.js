@@ -29,7 +29,7 @@ class Player {
         return this.army * this.currentTroop.multiplier;
     }
 
-    update(deltaTime, keys) {
+    update(deltaTime, keys, game) {
         // Horizontal movement
         this.velocityX = 0;
         if (keys['a'] || keys['arrowleft']) {
@@ -47,18 +47,21 @@ class Player {
         // Auto-fire with weapon-specific fire rate
         this.lastFireTime += deltaTime;
         if (this.lastFireTime >= this.currentWeapon.fireRate) {
-            this.fire();
+            this.fire(game);
             this.lastFireTime = 0;
         }
 
-        // Update projectiles
+        // Update projectiles (add trails if game provided)
         this.projectiles = this.projectiles.filter(p => {
             p.y -= PROJECTILES.SPEED;
+            if (game && game.projectileTrails) {
+                game.projectileTrails.addTrail(p);
+            }
             return p.y > -PROJECTILES.HEIGHT;
         });
     }
 
-    fire() {
+    fire(game) {
         // Combine weapon damage with troop multiplier and army multiplier for total damage
         const armyMultiplier = this.getArmyMultiplier();
         const totalDamage = this.currentWeapon.damage * this.currentTroop.multiplier * armyMultiplier;
@@ -66,7 +69,7 @@ class Player {
         // Projectile width depends on troop type
         const projectileWidth = this.currentTroop.projectileWidth;
 
-        this.projectiles.push({
+        const projectile = {
             x: this.x - projectileWidth / 2,
             y: this.y - this.height / 2,
             width: projectileWidth,
@@ -75,7 +78,19 @@ class Player {
             color: this.currentWeapon.color,
             piercing: this.currentWeapon.piercing,
             pierceCount: 0 // Track how many enemies this bullet has pierced
-        });
+        };
+
+        this.projectiles.push(projectile);
+
+        // Muzzle flash and sound effects
+        if (game) {
+            if (game.particleSystem) {
+                game.particleSystem.createMuzzleFlash(this.x, this.y - this.height / 2, this.currentWeapon.color);
+            }
+            if (game.audioSystem) {
+                game.audioSystem.playShoot(this.weaponType);
+            }
+        }
     }
 
     getArmyMultiplier() {

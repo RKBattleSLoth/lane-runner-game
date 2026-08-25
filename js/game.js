@@ -23,6 +23,13 @@ class Game {
         };
         this.damageTaken = false;
 
+        // A/V Systems
+        this.particleSystem = new ParticleSystem();
+        this.audioSystem = new AudioSystem();
+        this.screenShake = new ScreenShake();
+        this.background = new ScrollingBackground(GAME.WIDTH, GAME.HEIGHT);
+        this.projectileTrails = new ProjectileTrail();
+
         // Game objects
         this.player = new Player();
         this.gateManager = new GateManager();
@@ -40,6 +47,9 @@ class Game {
         this.keys = {};
         this.setupInput();
 
+        // Initialize audio on first user interaction
+        this.audioInitialized = false;
+
         // Start game loop
         requestAnimationFrame((time) => this.gameLoop(time));
     }
@@ -48,16 +58,33 @@ class Game {
         // Keyboard input
         window.addEventListener('keydown', (e) => {
             this.keys[e.key.toLowerCase()] = true;
+            this.initAudio(); // Try to init audio on any key press
         });
 
         window.addEventListener('keyup', (e) => {
             this.keys[e.key.toLowerCase()] = false;
         });
 
+        // Mouse/touch for audio init
+        this.canvas.addEventListener('click', () => {
+            this.initAudio();
+        });
+
         // Restart button
         this.restartBtn.addEventListener('click', () => {
             this.restart();
+            this.initAudio();
         });
+    }
+
+    async initAudio() {
+        if (!this.audioInitialized) {
+            const success = await this.audioSystem.init();
+            if (success) {
+                this.audioInitialized = true;
+                console.log('Audio system initialized');
+            }
+        }
     }
 
     gameLoop(currentTime) {
@@ -82,12 +109,18 @@ class Game {
             this.stats.maxArmy = this.player.army;
         }
 
+        // Update A/V systems
+        this.particleSystem.update(deltaTime);
+        this.screenShake.update(deltaTime);
+        this.projectileTrails.update();
+
         // Update player
-        this.player.update(deltaTime, this.keys);
+        this.player.update(deltaTime, this.keys, this);
 
         if (this.state === 'playing') {
             // Normal gameplay - scroll and spawn
             this.scrollDistance += GAME.SCROLL_SPEED;
+            this.background.update(GAME.SCROLL_SPEED);
             this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance);
             this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this);
 
@@ -103,7 +136,7 @@ class Game {
         }
 
         // Check collisions
-        this.gateManager.checkCollisions(this.player);
+        this.gateManager.checkCollisions(this.player, this);
         this.enemyManager.checkCollisions(this.player, this);
 
         // Update UI
@@ -118,15 +151,21 @@ class Game {
     }
 
     render() {
-        // Clear canvas
-        this.ctx.fillStyle = '#0f3460';
-        this.ctx.fillRect(0, 0, GAME.WIDTH, GAME.HEIGHT);
+        // Apply screen shake
+        this.ctx.save();
+        this.screenShake.apply(this.ctx);
+
+        // Draw scrolling background
+        this.background.draw(this.ctx);
 
         // Draw playfield boundaries
         this.drawPlayfieldBoundaries();
 
         // Draw progress bar
         this.drawProgressBar();
+
+        // Draw projectile trails (behind projectiles)
+        this.projectileTrails.draw(this.ctx);
 
         // Draw game objects
         this.gateManager.draw(this.ctx);
@@ -137,6 +176,12 @@ class Game {
         if (this.state === 'boss' && this.boss && this.boss.active) {
             this.drawBoss();
         }
+
+        // Draw particles on top
+        this.particleSystem.draw(this.ctx);
+
+        // Restore context (remove screen shake)
+        this.ctx.restore();
     }
 
     drawBoss() {
@@ -267,6 +312,9 @@ class Game {
             active: true,
             isFinalBoss: progress >= 1.0
         };
+
+        // Boss roar sound
+        this.audioSystem.playBossRoar();
     }
 
     updateBossBattle(deltaTime) {
@@ -306,6 +354,11 @@ class Game {
 
             if (this.checkCollision(projectile, bossBounds)) {
                 this.boss.health -= projectile.damage;
+
+                // Boss hit effects
+                this.particleSystem.createBossHitEffect(projectile.x + projectile.width / 2, projectile.y);
+                this.audioSystem.playBossHit();
+                this.screenShake.shake(3, 100);
 
                 if (this.boss.health <= 0) {
                     this.defeatBoss();
@@ -372,6 +425,11 @@ class Game {
     }
 
     defeatBoss() {
+        // Boss death explosion
+        this.particleSystem.createExplosion(this.boss.x, this.boss.y, '#ff0000', 30);
+        this.audioSystem.playEnemyDeath('BOSS');
+        this.screenShake.shake(10, 300);
+
         this.boss.active = false;
         this.stats.enemiesKilled++; // Count boss as kill
 
@@ -406,9 +464,11 @@ class Game {
                 this.gameOverText.textContent = 'Victory!';
             }
             this.gameOverScreen.classList.add('victory');
+            this.audioSystem.playVictory();
         } else {
             this.gameOverText.textContent = 'Game Over';
             this.gameOverScreen.classList.remove('victory');
+            this.audioSystem.playDefeat();
         }
 
         // Display stats
