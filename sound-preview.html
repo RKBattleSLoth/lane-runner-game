@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Effect Preview - Lane Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        h1 {
+            color: #00ff88;
+        }
+        h2 {
+            color: #6495ed;
+            margin-top: 30px;
+        }
+        .sound-category {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(100, 149, 237, 0.3);
+        }
+        .sound-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        audio {
+            width: 100%;
+            max-width: 400px;
+            margin: 10px 0;
+        }
+        a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .instructions {
+            background: rgba(255, 165, 0, 0.1);
+            padding: 15px;
+            border-left: 4px solid #ffa500;
+            margin: 20px 0;
+        }
+        .upload-section {
+            background: rgba(0, 255, 136, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px dashed #00ff88;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .preview-player {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 Lane Runner - Sound Effect Preview</h1>
+
+    <div class="instructions">
+        <h3>📋 Instructions:</h3>
+        <ol>
+            <li>Browse the recommended Mixkit categories below</li>
+            <li>Click the links to visit Mixkit and preview sounds</li>
+            <li>Download WAV files you like to your computer</li>
+            <li>Use the upload section below to test them locally</li>
+            <li>Once you've chosen sounds, let me know and I'll integrate them</li>
+        </ol>
+    </div>
+
+    <h2>🔫 Weapon Sounds</h2>
+    <div class="sound-category">
+        <h3>Recommended Categories:</h3>
+        <div class="sound-item">
+            <strong>Laser Sounds (12 sounds)</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/laser/" target="_blank">Browse Laser Sounds →</a><br>
+            Best for: Pistol, Rifle, Sniper - Look for short, clean laser zaps
+        </div>
+        <div class="sound-item">
+            <strong>Space Shooter Sounds (17 sounds)</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/space-shooter/" target="_blank">Browse Space Shooter →</a><br>
+            Best for: All weapons - Retro game laser sounds
+        </div>
+        <div class="sound-item">
+            <strong>Shot/Gun Sounds</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/shot/" target="_blank">Browse Shot Sounds →</a><br>
+            Best for: Machine Gun - Rapid fire feel
+        </div>
+    </div>
+
+    <h2>💀 Enemy Death Sounds</h2>
+    <div class="sound-category">
+        <div class="sound-item">
+            <strong>Arcade Sounds</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/arcade/" target="_blank">Browse Arcade Sounds →</a><br>
+            Best for: Peon deaths - Short "pop" or "zap" sounds
+        </div>
+        <div class="sound-item">
+            <strong>Explosion Sounds</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/explosion/" target="_blank">Browse Explosions →</a><br>
+            Best for: Boss deaths - Digital explosions
+        </div>
+    </div>
+
+    <h2>✨ Pickup/Powerup Sounds</h2>
+    <div class="sound-category">
+        <div class="sound-item">
+            <strong>Game Sounds (76 sounds)</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/game/" target="_blank">Browse Game Sounds →</a><br>
+            Best for: Gate pickups - Coin pickups, bonuses, positive alerts
+        </div>
+        <div class="sound-item">
+            <strong>Video Game Sounds (142 sounds)</strong><br>
+            <a href="https://mixkit.co/free-sound-effects/video-game/" target="_blank">Browse Video Game Sounds →</a><br>
+            Large variety of retro sounds
+        </div>
+    </div>
+
+    <h2>🎮 Test Your Downloaded Sounds</h2>
+    <div class="upload-section">
+        <h3>Upload and Preview:</h3>
+        <p>Download sounds from Mixkit, then upload them here to test:</p>
+
+        <label><strong>Weapon Sound:</strong></label><br>
+        <input type="file" id="weaponSound" accept="audio/*">
+        <div class="preview-player" id="weaponPreview"></div>
+
+        <label><strong>Enemy Death:</strong></label><br>
+        <input type="file" id="deathSound" accept="audio/*">
+        <div class="preview-player" id="deathPreview"></div>
+
+        <label><strong>Pickup Sound:</strong></label><br>
+        <input type="file" id="pickupSound" accept="audio/*">
+        <div class="preview-player" id="pickupPreview"></div>
+
+        <label><strong>Boss Sound:</strong></label><br>
+        <input type="file" id="bossSound" accept="audio/*">
+        <div class="preview-player" id="bossPreview"></div>
+    </div>
+
+    <script>
+        // Handle file uploads and create audio players
+        function setupFileInput(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    preview.innerHTML = `
+                        <audio controls>
+                            <source src="${url}" type="${file.type}">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <p style="color: #00ff88;">✓ Loaded: ${file.name}</p>
+                    `;
+                }
+            });
+        }
+
+        setupFileInput('weaponSound', 'weaponPreview');
+        setupFileInput('deathSound', 'deathPreview');
+        setupFileInput('pickupSound', 'pickupPreview');
+        setupFileInput('bossSound', 'bossPreview');
+    </script>
+
+    <div style="margin-top: 40px; padding: 20px; background: rgba(100, 149, 237, 0.1); border-radius: 8px;">
+        <h3>📝 Next Steps:</h3>
+        <p>Once you've found sounds you like:</p>
+        <ol>
+            <li>Download them from Mixkit (WAV format recommended)</li>
+            <li>Tell me which sounds you chose for each category</li>
+            <li>I'll create a <code>/sounds/</code> folder and integrate them into the game</li>
+        </ol>
+        <p style="color: #6495ed;">
+            <strong>License:</strong> All Mixkit sounds are royalty-free for commercial and non-commercial use, no attribution required.
+        </p>
+    </div>
+</body>
+</html>

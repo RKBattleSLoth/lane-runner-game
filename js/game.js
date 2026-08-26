@@ -59,6 +59,22 @@ class Game {
         window.addEventListener('keydown', (e) => {
             this.keys[e.key.toLowerCase()] = true;
             this.initAudio(); // Try to init audio on any key press
+
+            // Weapon switching with number keys
+            switch(e.key) {
+                case '1':
+                    this.player.setWeapon('PISTOL');
+                    break;
+                case '2':
+                    this.player.setWeapon('RIFLE');
+                    break;
+                case '3':
+                    this.player.setWeapon('MACHINE_GUN');
+                    break;
+                case '4':
+                    this.player.setWeapon('SNIPER');
+                    break;
+            }
         });
 
         window.addEventListener('keyup', (e) => {
