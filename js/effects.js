@@ -48,12 +48,12 @@ class ScrollingBackground {
     draw(ctx) {
         ctx.save();
 
-        // Dark background
-        ctx.fillStyle = '#0a1929';
+        // Dark apocalyptic background
+        ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, this.width, this.height);
 
-        // Grid pattern
-        ctx.strokeStyle = 'rgba(100, 149, 237, 0.1)';
+        // Grid pattern (brown/gray for ruined city streets)
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
         ctx.lineWidth = 1;
 
         // Vertical lines

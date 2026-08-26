@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lane Runner</title>
+    <title>Zombie Survival Shooter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
         <div id="error-display" style="position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; padding: 10px; font-family: monospace; font-size: 11px; max-width: 300px; display: none; z-index: 1000;"></div>
         <div id="ui">
             <div id="stats">
-                <div id="army-count">ARMY: <span id="army-number">30</span></div>
+                <div id="army-count">SURVIVORS: <span id="army-number">30</span></div>
                 <div id="weapon-info">WEAPON: <span id="weapon-name">PISTOL</span></div>
-                <div id="troop-info">TROOP: <span id="troop-name">SOLDIER</span></div>
+                <div id="troop-info">TYPE: <span id="troop-name">CIVILIAN</span></div>
                 <div id="controls-hint" style="font-size: 10px; color: rgba(100, 149, 237, 0.7); margin-top: 8px;">
                     1-4: Switch Weapon | A/D: Move
                 </div>
@@ -25,11 +25,11 @@
             <div id="game-over" class="hidden">
                 <h2 id="game-over-text">GAME OVER</h2>
                 <div id="stats-display">
-                    <div class="stat-line">ENEMIES KILLED: <span id="stat-kills">0</span></div>
-                    <div class="stat-line">MAX ARMY SIZE: <span id="stat-max-army">0</span></div>
+                    <div class="stat-line">ZOMBIES KILLED: <span id="stat-kills">0</span></div>
+                    <div class="stat-line">MAX SURVIVORS: <span id="stat-max-army">0</span></div>
                     <div class="stat-line">FINAL WEAPON: <span id="stat-weapon">-</span></div>
-                    <div class="stat-line">FINAL TROOP: <span id="stat-troop">-</span></div>
-                    <div class="stat-line">TIME: <span id="stat-time">0s</span></div>
+                    <div class="stat-line">SURVIVOR TYPE: <span id="stat-troop">-</span></div>
+                    <div class="stat-line">SURVIVAL TIME: <span id="stat-time">0s</span></div>
                 </div>
                 <button id="restart-btn">PLAY AGAIN</button>
             </div>

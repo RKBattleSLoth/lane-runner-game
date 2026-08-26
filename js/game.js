@@ -272,7 +272,7 @@ class Game {
         this.ctx.fillStyle = '#fff';
         this.ctx.font = 'bold 16px Arial';
         this.ctx.textAlign = 'center';
-        const label = this.boss.isFinalBoss ? 'FINAL BOSS' : 'BOSS';
+        const label = this.boss.isFinalBoss ? 'ZOMBIE OVERLORD' : 'HORDE LEADER';
         const enragedLabel = isEnraged ? label + ' [ENRAGED]' : label;
         this.ctx.fillText(enragedLabel, this.boss.x, this.boss.y - this.boss.height / 2 - 35);
 
@@ -282,7 +282,7 @@ class Game {
     }
 
     drawPlayfieldBoundaries() {
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.strokeStyle = 'rgba(139, 115, 85, 0.5)'; // Brown apocalyptic boundaries
         this.ctx.lineWidth = 3;
 
         // Left boundary
