@@ -15,6 +15,9 @@ class Player {
         // Weapon and troop systems
         this.weaponType = 'PISTOL';
         this.troopType = 'SOLDIER';
+
+        // Track unlocked weapons (start with only PISTOL)
+        this.unlockedWeapons = new Set(['PISTOL']);
     }
 
     get currentWeapon() {
@@ -125,8 +128,19 @@ class Player {
 
     setWeapon(weaponType) {
         if (WEAPON_TYPES[weaponType]) {
+            // Add to unlocked weapons when picked up via gate
+            this.unlockedWeapons.add(weaponType);
             this.weaponType = weaponType;
         }
+    }
+
+    switchWeapon(weaponType) {
+        // Only switch if weapon is unlocked
+        if (WEAPON_TYPES[weaponType] && this.unlockedWeapons.has(weaponType)) {
+            this.weaponType = weaponType;
+            return true;
+        }
+        return false;
     }
 
     setTroopType(troopType) {

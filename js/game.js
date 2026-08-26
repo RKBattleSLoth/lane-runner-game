@@ -60,19 +60,19 @@ class Game {
             this.keys[e.key.toLowerCase()] = true;
             this.initAudio(); // Try to init audio on any key press
 
-            // Weapon switching with number keys
+            // Weapon switching with number keys (only if unlocked)
             switch(e.key) {
                 case '1':
-                    this.player.setWeapon('PISTOL');
+                    this.player.switchWeapon('PISTOL');
                     break;
                 case '2':
-                    this.player.setWeapon('RIFLE');
+                    this.player.switchWeapon('RIFLE');
                     break;
                 case '3':
-                    this.player.setWeapon('MACHINE_GUN');
+                    this.player.switchWeapon('MACHINE_GUN');
                     break;
                 case '4':
-                    this.player.setWeapon('SNIPER');
+                    this.player.switchWeapon('SNIPER');
                     break;
             }
         });

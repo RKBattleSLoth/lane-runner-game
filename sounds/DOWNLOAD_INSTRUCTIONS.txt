@@ -1,0 +1,20 @@
+HOW TO DOWNLOAD "GAME GUN SHOT" FROM MIXKIT
+=============================================
+
+1. Go to: https://mixkit.co/free-sound-effects/game/
+
+2. Search or scroll to find "Game gun shot"
+
+3. Click the DOWNLOAD button (WAV format recommended)
+
+4. Save the file to this folder: /Users/edwardbeshers/lane-runner-game/sounds/
+
+5. Rename it to: shoot.wav
+
+6. Once downloaded, let Claude know and I'll integrate it with variations!
+
+Alternative direct links to try:
+- https://mixkit.co/free-sound-effects/gun/
+- https://mixkit.co/free-sound-effects/shot/
+
+License: Mixkit License (free for commercial/non-commercial, no attribution required)
