@@ -25,7 +25,7 @@ class Game {
 
         // A/V Systems
         this.particleSystem = new ParticleSystem();
-        this.audioSystem = new AudioSystem();
+        this.audioSystem = new AudioFileSystem(); // Using file-based audio with variations
         this.screenShake = new ScreenShake();
         this.background = new ScrollingBackground(GAME.WIDTH, GAME.HEIGHT);
         this.projectileTrails = new ProjectileTrail();
