@@ -40,21 +40,31 @@ class AudioFileSystem {
 
     async loadSounds() {
         // Load the base shoot sound (try MP3 first, then WAV)
+        console.log('🔊 Attempting to load shoot sound...');
         try {
             let response = await fetch('sounds/shoot.mp3');
+            console.log('MP3 fetch response:', response.status, response.ok);
+
             if (!response.ok) {
+                console.log('MP3 not found, trying WAV...');
                 response = await fetch('sounds/shoot.wav');
+                console.log('WAV fetch response:', response.status, response.ok);
             }
 
             if (response.ok) {
+                console.log('Response OK, loading audio data...');
                 const arrayBuffer = await response.arrayBuffer();
+                console.log('ArrayBuffer size:', arrayBuffer.byteLength, 'bytes');
                 this.buffers.shoot = await this.context.decodeAudioData(arrayBuffer);
-                console.log('✓ Loaded shoot sound');
+                console.log('✅ Successfully loaded and decoded shoot sound!');
+                console.log('Buffer duration:', this.buffers.shoot.duration, 'seconds');
             } else {
-                console.warn('shoot.mp3/shoot.wav not found - using procedural sounds');
+                console.error('❌ shoot.mp3/shoot.wav not found - using procedural sounds');
+                console.error('Response status:', response.status);
             }
         } catch (e) {
-            console.warn('Could not load shoot sound:', e);
+            console.error('❌ Could not load shoot sound:', e);
+            console.error('Error details:', e.message, e.stack);
         }
     }
 
@@ -105,6 +115,8 @@ class AudioFileSystem {
         if (now - this.lastShootTime < this.shootThrottle) return;
         this.lastShootTime = now;
 
+        console.log('🔫 playShoot called, weapon:', weaponType, 'buffer exists:', !!this.buffers.shoot);
+
         if (this.buffers.shoot) {
             // Use the loaded sound file with variations per weapon
             const variations = {
@@ -115,8 +127,10 @@ class AudioFileSystem {
             };
 
             const variation = variations[weaponType] || variations['PISTOL'];
+            console.log('Playing buffer with variation:', variation);
             this.playBuffer(this.buffers.shoot, variation);
         } else {
+            console.log('⚠️ No buffer loaded, using procedural sound');
             // Fallback to procedural sound
             this.playShootProcedural(weaponType);
         }
