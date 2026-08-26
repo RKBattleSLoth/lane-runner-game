@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Picker - Zombie Shooter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 { color: #8BC34A; }
+        h2 { color: #A0826D; margin-top: 30px; }
+        .section {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid rgba(139, 115, 85, 0.3);
+        }
+        .sprite-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .sprite-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .sprite-item:hover {
+            background: rgba(139, 195, 74, 0.2);
+            border-color: #8BC34A;
+        }
+        .sprite-item img {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            background: #333;
+            padding: 10px;
+        }
+        .sprite-name {
+            font-size: 11px;
+            margin-top: 5px;
+            word-wrap: break-word;
+        }
+        .info {
+            background: rgba(139, 195, 74, 0.1);
+            padding: 15px;
+            border-left: 4px solid #8BC34A;
+            margin: 20px 0;
+        }
+        .requirements {
+            background: rgba(255, 165, 0, 0.1);
+            padding: 15px;
+            border-left: 4px solid #ffa500;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+        }
+        th {
+            background: rgba(139, 195, 74, 0.2);
+            color: #8BC34A;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧟 Zombie Shooter - Sprite Picker</h1>
+
+    <div class="requirements">
+        <h3>📋 What We Need:</h3>
+        <p>We need sprites for <strong>12 combinations</strong>:</p>
+        <table>
+            <tr>
+                <th>Troop Type</th>
+                <th>Weapons Needed</th>
+                <th>Total</th>
+            </tr>
+            <tr>
+                <td><strong>Civilian</strong> (basic survivor)</td>
+                <td>Pistol, Rifle, MG, Sniper</td>
+                <td>4 sprites</td>
+            </tr>
+            <tr>
+                <td><strong>Veteran</strong> (experienced)</td>
+                <td>Pistol, Rifle, MG, Sniper</td>
+                <td>4 sprites</td>
+            </tr>
+            <tr>
+                <td><strong>Military</strong> (soldier)</td>
+                <td>Pistol, Rifle, MG, Sniper</td>
+                <td>4 sprites</td>
+            </tr>
+        </table>
+        <p><strong>Strategy:</strong> Pick 3 different character types from below, then for each character, we'll use their weapon variations!</p>
+    </div>
+
+    <div class="info">
+        <h3>💡 Quick Guide:</h3>
+        <ul>
+            <li><strong>Civilian</strong> → Pick a "Man" or "Survivor" character (regular looking)</li>
+            <li><strong>Veteran</strong> → Pick "Man Old" or a different "Survivor" (experienced looking)</li>
+            <li><strong>Military</strong> → Pick "Soldier 1" or "Hitman 1" (tactical/armored)</li>
+        </ul>
+        <p>Each character folder has these weapon poses:</p>
+        <ul>
+            <li><code>_gun.png</code> = Pistol/Rifle</li>
+            <li><code>_machine.png</code> = Machine Gun</li>
+            <li><code>_silencer.png</code> = Sniper</li>
+        </ul>
+    </div>
+
+    <h2>👤 Available Characters (Pick 3 for your troop types)</h2>
+
+    <div class="section">
+        <h3>Regular Survivors (Good for Civilian)</h3>
+        <div class="sprite-grid" id="survivors"></div>
+    </div>
+
+    <div class="section">
+        <h3>Soldiers/Military (Good for Military)</h3>
+        <div class="sprite-grid" id="soldiers"></div>
+    </div>
+
+    <div class="section">
+        <h3>Other Characters (Good for Veteran)</h3>
+        <div class="sprite-grid" id="others"></div>
+    </div>
+
+    <h2>🧟 Zombie Sprites</h2>
+
+    <div class="section">
+        <h3>Zombies (We'll use different sizes for small/medium/large)</h3>
+        <div class="sprite-grid" id="zombies"></div>
+    </div>
+
+    <script>
+        const basePath = 'kenney_top-down-shooter/PNG/';
+
+        // Character types to display
+        const characters = {
+            survivors: [
+                'Survivor 1',
+                'Man Blue',
+                'Man Brown'
+            ],
+            soldiers: [
+                'Soldier 1',
+                'Hitman 1'
+            ],
+            others: [
+                'Man Old',
+                'Woman Green',
+                'Robot 1'
+            ]
+        };
+
+        function loadCharacterSprites(folder, containerid) {
+            const container = document.getElementById(containerid);
+
+            characters[containerid].forEach(charName => {
+                const charFolder = charName.replace(/ /g, '%20');
+
+                // Get the base name for file naming
+                const baseName = charName.toLowerCase().replace(/ /g, '');
+
+                // Load the gun sprite (most common)
+                const spriteDiv = document.createElement('div');
+                spriteDiv.className = 'sprite-item';
+                spriteDiv.innerHTML = `
+                    <img src="${basePath}${charFolder}/${baseName}_gun.png" alt="${charName}"
+                         onerror="this.onerror=null; this.src='${basePath}${charFolder}/${baseName}_hold.png';">
+                    <div class="sprite-name">${charName}</div>
+                    <div style="font-size: 10px; color: #888; margin-top: 3px;">
+                        Has: gun, machine, silencer
+                    </div>
+                `;
+                container.appendChild(spriteDiv);
+            });
+        }
+
+        function loadZombieSprites() {
+            const container = document.getElementById('zombies');
+            const zombieFolder = 'Zombie%201';
+            const zombieName = 'zombie1';
+
+            // Zombies typically have: _hold, _stand
+            ['hold', 'stand'].forEach(pose => {
+                const spriteDiv = document.createElement('div');
+                spriteDiv.className = 'sprite-item';
+                spriteDiv.innerHTML = `
+                    <img src="${basePath}${zombieFolder}/${zombieName}_${pose}.png" alt="Zombie ${pose}">
+                    <div class="sprite-name">Zombie - ${pose}</div>
+                `;
+                container.appendChild(spriteDiv);
+            });
+        }
+
+        // Load all sprites
+        loadCharacterSprites('survivors', 'survivors');
+        loadCharacterSprites('soldiers', 'soldiers');
+        loadCharacterSprites('others', 'others');
+        loadZombieSprites();
+    </script>
+
+    <div class="info" style="margin-top: 40px;">
+        <h3>📝 Once You've Picked:</h3>
+        <p>Tell me which 3 characters you want for:</p>
+        <ul>
+            <li><strong>Civilian</strong> = ?</li>
+            <li><strong>Veteran</strong> = ?</li>
+            <li><strong>Military</strong> = ?</li>
+        </ul>
+        <p>And I'll set them up with all 4 weapon types automatically!</p>
+    </div>
+</body>
+</html>

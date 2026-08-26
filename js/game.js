@@ -29,6 +29,7 @@ class Game {
         this.screenShake = new ScreenShake();
         this.background = new ScrollingBackground(GAME.WIDTH, GAME.HEIGHT);
         this.projectileTrails = new ProjectileTrail();
+        this.spriteManager = new SpriteManager();
 
         // Game objects
         this.player = new Player();
@@ -49,6 +50,16 @@ class Game {
 
         // Initialize audio on first user interaction
         this.audioInitialized = false;
+
+        // Load sprites then start game loop
+        this.spritesLoaded = false;
+        this.spriteManager.loadAllSprites().then(() => {
+            this.spritesLoaded = true;
+            console.log('✅ Sprites ready, starting game');
+        }).catch(err => {
+            console.warn('⚠️ Could not load sprites, using fallback graphics:', err);
+            this.spritesLoaded = false;
+        });
 
         // Start game loop
         requestAnimationFrame((time) => this.gameLoop(time));
@@ -196,8 +207,8 @@ class Game {
 
             // Draw game objects
             this.gateManager.draw(this.ctx);
-            this.enemyManager.draw(this.ctx);
-            this.player.draw(this.ctx);
+            this.enemyManager.draw(this.ctx, this.spriteManager);
+            this.player.draw(this.ctx, this.spriteManager);
 
             // Draw boss if active
             if (this.state === 'boss' && this.boss && this.boss.active) {

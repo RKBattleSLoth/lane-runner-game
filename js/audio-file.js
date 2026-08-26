@@ -40,22 +40,25 @@ class AudioFileSystem {
 
     async loadSounds() {
         // Load the base shoot sound (try MP3 first, then WAV)
+        console.log('🔊 Attempting to load shoot sound...');
         try {
-            let response = await fetch('sounds/shoot.mp3');
+            let response = await fetch('sounds/shoot.mp3?v=3');
 
             if (!response.ok) {
-                response = await fetch('sounds/shoot.wav');
+                console.log('MP3 not found, trying WAV...');
+                response = await fetch('sounds/shoot.wav?v=3');
             }
 
             if (response.ok) {
+                console.log('✓ Fetched audio file, decoding...');
                 const arrayBuffer = await response.arrayBuffer();
                 this.buffers.shoot = await this.context.decodeAudioData(arrayBuffer);
-                console.log('✓ Loaded shoot sound');
+                console.log('✅ SHOOT SOUND LOADED SUCCESSFULLY - using gunshot audio file');
             } else {
-                console.warn('shoot.mp3/shoot.wav not found - using procedural sounds');
+                console.warn('⚠️ shoot.mp3/shoot.wav not found - using procedural sounds');
             }
         } catch (e) {
-            console.warn('Could not load shoot sound:', e);
+            console.error('❌ Could not load shoot sound:', e);
         }
     }
 
@@ -119,6 +122,7 @@ class AudioFileSystem {
             this.playBuffer(this.buffers.shoot, variation);
         } else {
             // Fallback to procedural sound
+            console.warn('⚠️ USING PROCEDURAL SOUNDS - shoot.mp3 not loaded!');
             this.playShootProcedural(weaponType);
         }
     }

@@ -149,15 +149,27 @@ class Player {
         }
     }
 
-    draw(ctx) {
-        // Draw player with troop-specific color
-        ctx.fillStyle = this.currentTroop.color;
-        ctx.fillRect(
-            this.x - this.width / 2,
-            this.y - this.height / 2,
-            this.width,
-            this.height
-        );
+    draw(ctx, spriteManager) {
+        // Try to draw sprite, fallback to colored rectangle
+        let drewSprite = false;
+        if (spriteManager && spriteManager.loaded) {
+            const sprite = spriteManager.getPlayerSprite(this.troopType, this.weaponType);
+            if (sprite) {
+                // Rotate player to face up (-90 degrees)
+                drewSprite = spriteManager.drawSpriteRotated(ctx, sprite, this.x, this.y, this.width, this.height, -Math.PI / 2);
+            }
+        }
+
+        // Fallback to colored rectangle if sprite not available
+        if (!drewSprite) {
+            ctx.fillStyle = this.currentTroop.color;
+            ctx.fillRect(
+                this.x - this.width / 2,
+                this.y - this.height / 2,
+                this.width,
+                this.height
+            );
+        }
 
         // Draw army count on player
         ctx.fillStyle = '#000';
@@ -166,10 +178,30 @@ class Player {
         ctx.textBaseline = 'middle';
         ctx.fillText(this.army.toString(), this.x, this.y);
 
-        // Draw projectiles with weapon-specific color
+        // Draw projectiles
         this.projectiles.forEach(p => {
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, p.width, p.height);
+            let drewBullet = false;
+            if (spriteManager && spriteManager.loaded) {
+                const bulletSprite = spriteManager.getSprite('bullet');
+                if (bulletSprite) {
+                    // Draw bullet sprite rotated upward
+                    drewBullet = spriteManager.drawSpriteRotated(
+                        ctx,
+                        bulletSprite,
+                        p.x + p.width / 2,
+                        p.y + p.height / 2,
+                        p.width,
+                        p.height,
+                        -Math.PI / 2
+                    );
+                }
+            }
+
+            // Fallback to colored rectangle
+            if (!drewBullet) {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+            }
         });
     }
 

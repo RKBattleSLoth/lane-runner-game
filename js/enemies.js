@@ -19,51 +19,63 @@ class Enemy {
         this.y += scrollSpeed;
     }
 
-    draw(ctx) {
+    draw(ctx, spriteManager) {
         if (!this.active) return;
 
-        // Draw enemy shape
-        ctx.fillStyle = this.color;
-
-        if (this.shape === 'circle') {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        } else if (this.shape === 'square') {
-            ctx.fillRect(
-                this.x - this.width / 2,
-                this.y - this.height / 2,
-                this.width,
-                this.height
-            );
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-                this.x - this.width / 2,
-                this.y - this.height / 2,
-                this.width,
-                this.height
-            );
-        } else if (this.shape === 'hexagon') {
-            // Draw hexagon
-            ctx.beginPath();
-            const sides = 6;
-            const radius = this.width / 2;
-            for (let i = 0; i < sides; i++) {
-                const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
-                const x = this.x + radius * Math.cos(angle);
-                const y = this.y + radius * Math.sin(angle);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+        // Try to draw zombie sprite, fallback to colored shape
+        let drewSprite = false;
+        if (spriteManager && spriteManager.loaded) {
+            const zombieSprite = spriteManager.getSprite('zombie');
+            if (zombieSprite) {
+                // Rotate zombie to face down (90 degrees)
+                drewSprite = spriteManager.drawSpriteRotated(ctx, zombieSprite, this.x, this.y, this.width, this.height, Math.PI / 2);
             }
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.stroke();
+        }
+
+        // Fallback to colored shape if sprite not available
+        if (!drewSprite) {
+            ctx.fillStyle = this.color;
+
+            if (this.shape === 'circle') {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else if (this.shape === 'square') {
+                ctx.fillRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    this.width,
+                    this.height
+                );
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    this.width,
+                    this.height
+                );
+            } else if (this.shape === 'hexagon') {
+                // Draw hexagon
+                ctx.beginPath();
+                const sides = 6;
+                const radius = this.width / 2;
+                for (let i = 0; i < sides; i++) {
+                    const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+                    const x = this.x + radius * Math.cos(angle);
+                    const y = this.y + radius * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
         }
 
         // Draw health bar for all enemies
@@ -228,8 +240,8 @@ class EnemyManager {
         this.enemies.push(new Enemy(x, y, health, cost, enemyType));
     }
 
-    draw(ctx) {
-        this.enemies.forEach(enemy => enemy.draw(ctx));
+    draw(ctx, spriteManager) {
+        this.enemies.forEach(enemy => enemy.draw(ctx, spriteManager));
     }
 
     checkCollisions(player, game) {
