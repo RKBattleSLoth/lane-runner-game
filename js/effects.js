@@ -45,41 +45,54 @@ class ScrollingBackground {
         }
     }
 
-    draw(ctx) {
+    draw(ctx, spriteManager) {
         ctx.save();
 
         // Dark apocalyptic background
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, this.width, this.height);
 
-        // Grid pattern (brown/gray for ruined city streets)
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
-        ctx.lineWidth = 1;
+        // Draw static tiled background (no scrolling)
+        if (spriteManager && spriteManager.loaded) {
+            const tileSize = this.gridSize;
+            const tilesX = Math.ceil(this.width / tileSize);
+            const tilesY = Math.ceil(this.height / tileSize);
 
-        // Vertical lines
-        for (let x = 0; x < this.width; x += this.gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, this.height);
-            ctx.stroke();
-        }
+            for (let tx = 0; tx < tilesX; tx++) {
+                for (let ty = 0; ty < tilesY; ty++) {
+                    // Static tile pattern
+                    const tileIndex = ((tx * 7 + ty * 13) % 10) + 1;
+                    const sprite = spriteManager.getSprite(`tile_bg_${tileIndex}`);
 
-        // Horizontal lines (scrolling)
-        for (let y = -this.gridSize; y < this.height + this.gridSize; y += this.gridSize) {
-            const drawY = y + this.offset;
-            ctx.beginPath();
-            ctx.moveTo(0, drawY);
-            ctx.lineTo(this.width, drawY);
-            ctx.stroke();
-        }
+                    if (sprite) {
+                        const x = tx * tileSize;
+                        const y = ty * tileSize;
+                        ctx.globalAlpha = 0.6;
+                        ctx.drawImage(sprite, x, y, tileSize, tileSize);
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+            }
+        } else {
+            // Fallback to static grid pattern
+            ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
+            ctx.lineWidth = 1;
 
-        // Add some stars
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 73) % this.width; // Pseudo-random but consistent
-            const y = ((i * 137) % this.height + this.offset * 0.3) % this.height;
-            const size = 1 + (i % 3);
-            ctx.fillRect(x, y, size, size);
+            // Vertical lines
+            for (let x = 0; x < this.width; x += this.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, this.height);
+                ctx.stroke();
+            }
+
+            // Horizontal lines (static)
+            for (let y = 0; y < this.height; y += this.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(this.width, y);
+                ctx.stroke();
+            }
         }
 
         ctx.restore();

@@ -1,23 +1,30 @@
 // Player Class
 class Player {
-    constructor() {
+    constructor(levelConfig = null) {
         this.x = GAME.WIDTH / 2; // Start at center
         this.y = GAME.HEIGHT - 100;
         this.width = PLAYER.WIDTH;
         this.height = PLAYER.HEIGHT;
-        this.army = PLAYER.INITIAL_ARMY;
+
+        // Use level-specific starting survivors or default
+        const startingSurvivors = levelConfig?.startingSurvivors || PLAYER.INITIAL_ARMY;
+        this.army = startingSurvivors;
+
         this.lastFireTime = 0;
         this.projectiles = [];
 
         // Movement
         this.velocityX = 0;
 
-        // Weapon and troop systems
-        this.weaponType = 'PISTOL';
-        this.troopType = 'SOLDIER';
+        // Weapon and troop systems - use level config if provided
+        this.weaponType = levelConfig?.startingWeapon || 'PISTOL';
+        this.troopType = levelConfig?.startingTroop || 'SOLDIER';
 
-        // Track unlocked weapons (start with only PISTOL)
+        // Track unlocked weapons (start with PISTOL + any level-specific weapon)
         this.unlockedWeapons = new Set(['PISTOL']);
+        if (levelConfig?.startingWeapon && levelConfig.startingWeapon !== 'PISTOL') {
+            this.unlockedWeapons.add(levelConfig.startingWeapon);
+        }
     }
 
     get currentWeapon() {
@@ -56,11 +63,21 @@ class Player {
 
         // Update projectiles (add trails if game provided)
         this.projectiles = this.projectiles.filter(p => {
-            p.y -= PROJECTILES.SPEED;
+            // Check if projectile has custom velocity (multi-directional weapon)
+            if (p.velocityX !== undefined && p.velocityY !== undefined) {
+                p.x += p.velocityX;
+                p.y += p.velocityY;
+            } else {
+                // Standard upward movement
+                p.y -= PROJECTILES.SPEED;
+            }
+
             if (game && game.projectileTrails) {
                 game.projectileTrails.addTrail(p);
             }
-            return p.y > -PROJECTILES.HEIGHT;
+
+            // Remove if off-screen (top, left, or right)
+            return p.y > -PROJECTILES.HEIGHT && p.x > -50 && p.x < GAME.WIDTH + 50;
         });
     }
 
@@ -72,18 +89,47 @@ class Player {
         // Projectile width depends on troop type
         const projectileWidth = this.currentTroop.projectileWidth;
 
-        const projectile = {
-            x: this.x - projectileWidth / 2,
-            y: this.y - this.height / 2,
-            width: projectileWidth,
-            height: PROJECTILES.HEIGHT,
-            damage: totalDamage,
-            color: this.currentWeapon.color,
-            piercing: this.currentWeapon.piercing,
-            pierceCount: 0 // Track how many enemies this bullet has pierced
-        };
+        // Check if weapon is multi-directional (Mounted MG)
+        if (this.currentWeapon.multiDirectional) {
+            // Shoot 3 bullets: forward, diagonal left (30°), diagonal right (30°)
+            const angles = [
+                -Math.PI / 2,           // Forward (up)
+                -Math.PI / 2 - Math.PI / 6,  // Diagonal left (30° from forward)
+                -Math.PI / 2 + Math.PI / 6   // Diagonal right (30° from forward)
+            ];
 
-        this.projectiles.push(projectile);
+            angles.forEach(angle => {
+                const projectile = {
+                    x: this.x - projectileWidth / 2,
+                    y: this.y - this.height / 2,
+                    width: projectileWidth,
+                    height: PROJECTILES.HEIGHT,
+                    damage: totalDamage,
+                    color: this.currentWeapon.color,
+                    piercing: this.currentWeapon.piercing,
+                    pierceCount: 0,
+                    // Add velocity components for angled shots
+                    velocityX: Math.cos(angle) * PROJECTILES.SPEED,
+                    velocityY: Math.sin(angle) * PROJECTILES.SPEED
+                };
+
+                this.projectiles.push(projectile);
+            });
+        } else {
+            // Single forward projectile
+            const projectile = {
+                x: this.x - projectileWidth / 2,
+                y: this.y - this.height / 2,
+                width: projectileWidth,
+                height: PROJECTILES.HEIGHT,
+                damage: totalDamage,
+                color: this.currentWeapon.color,
+                piercing: this.currentWeapon.piercing,
+                pierceCount: 0 // Track how many enemies this bullet has pierced
+            };
+
+            this.projectiles.push(projectile);
+        }
 
         // Muzzle flash and sound effects
         if (game) {

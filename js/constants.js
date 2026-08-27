@@ -50,6 +50,15 @@ const WEAPON_TYPES = {
         fireRate: 500,
         piercing: 3, // Can pierce through 3 enemies
         symbol: '🎯'
+    },
+    MOUNTED_MG: {
+        name: 'Mounted MG',
+        damage: 3, // 50% more than MG
+        color: '#ff4400',
+        fireRate: 100, // Same as MG
+        piercing: 0,
+        multiDirectional: true, // Shoots in 3 directions
+        symbol: '💥💥'
     }
 };
 
@@ -94,12 +103,14 @@ const GATES = {
     TYPES: {
         // Survivor crates - collision-based, no HP
         ADD_10: { symbol: '+10', color: '#8B7355', category: 'army', requiresShooting: false, apply: (player) => player.modifyArmy(10) },
+        ADD_20: { symbol: '+20', color: '#9B8365', category: 'army', requiresShooting: false, apply: (player) => player.modifyArmy(20) },
         MULTIPLY_2: { symbol: '×2', color: '#6B5545', category: 'army', requiresShooting: false, apply: (player) => player.multiplyArmy(2) },
 
-        // Weapon crates - require shooting, have HP
-        WEAPON_RIFLE: { symbol: 'Rifle', color: '#8B6914', category: 'weapon', requiresShooting: true, health: 5, apply: (player) => player.setWeapon('RIFLE') },
-        WEAPON_MG: { symbol: 'MG', color: '#A0522D', category: 'weapon', requiresShooting: true, health: 8, apply: (player) => player.setWeapon('MACHINE_GUN') },
-        WEAPON_SNIPER: { symbol: 'Sniper', color: '#5F4C3B', category: 'weapon', requiresShooting: true, health: 10, apply: (player) => player.setWeapon('SNIPER') },
+        // Weapon crates - require shooting, have HP (unlock weapon and auto-switch)
+        WEAPON_RIFLE: { symbol: 'Rifle', color: '#8B6914', category: 'weapon', requiresShooting: true, health: 5, apply: (player) => { player.unlockedWeapons.add('RIFLE'); player.weaponType = 'RIFLE'; } },
+        WEAPON_MG: { symbol: 'MG', color: '#A0522D', category: 'weapon', requiresShooting: true, health: 8, apply: (player) => { player.unlockedWeapons.add('MACHINE_GUN'); player.weaponType = 'MACHINE_GUN'; } },
+        WEAPON_SNIPER: { symbol: 'Sniper', color: '#5F4C3B', category: 'weapon', requiresShooting: true, health: 10, apply: (player) => { player.unlockedWeapons.add('SNIPER'); player.weaponType = 'SNIPER'; } },
+        WEAPON_MOUNTED_MG: { symbol: 'Mounted', color: '#8B4513', category: 'weapon', requiresShooting: true, health: 12, apply: (player) => { player.unlockedWeapons.add('MOUNTED_MG'); player.weaponType = 'MOUNTED_MG'; } },
 
         // Survivor type crates - require shooting, have HP
         TROOP_TANK: { symbol: 'Military', color: '#4A5D4A', category: 'troop', requiresShooting: true, health: 8, apply: (player) => player.setTroopType('TANK') },

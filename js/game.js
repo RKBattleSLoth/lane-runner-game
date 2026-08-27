@@ -1,6 +1,13 @@
 // Main Game Class
 class Game {
-    constructor() {
+    constructor(levelConfig = null) {
+        // Load level configuration
+        this.currentLevel = levelConfig || getLevel(1);
+
+        // Apply level settings to global constants
+        GAME.LEVEL_LENGTH = this.currentLevel.length;
+        GAME.SCROLL_SPEED = this.currentLevel.scrollSpeed;
+
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = GAME.WIDTH;
@@ -10,15 +17,21 @@ class Game {
         this.state = 'playing'; // 'playing', 'boss', 'gameover', 'victory'
         this.scrollDistance = 0;
         this.lastTime = 0;
-        this.boss = null;
+        this.boss = null; // Single boss
+        this.boss1 = null; // First boss for dual mode
+        this.boss2 = null; // Second boss for dual mode
+        this.isDualBoss = false; // Track if current boss is dual
+        this.bossEnraged = false; // Track enraged state for dual bosses
+        this.bossHyperEnraged = false; // Track hyper-enraged state (critical health)
         this.bossMinionTimer = 0;
         this.boss50Defeated = false;
         this.boss100Defeated = false;
 
-        // Stats tracking
+        // Stats tracking (use level-specific starting values)
+        const startingSurvivors = this.currentLevel?.startingSurvivors || PLAYER.INITIAL_ARMY;
         this.stats = {
             enemiesKilled: 0,
-            maxArmy: 30,
+            maxArmy: startingSurvivors,
             timeElapsed: 0
         };
         this.damageTaken = false;
@@ -32,14 +45,16 @@ class Game {
         this.spriteManager = new SpriteManager();
 
         // Game objects
-        this.player = new Player();
-        this.gateManager = new GateManager();
-        this.enemyManager = new EnemyManager();
+        this.player = new Player(this.currentLevel);
+        this.gateManager = new GateManager(this.currentLevel);
+        this.enemyManager = new EnemyManager(this.currentLevel);
 
         // UI elements
         this.armyDisplay = document.getElementById('army-number');
         this.weaponDisplay = document.getElementById('weapon-name');
         this.troopDisplay = document.getElementById('troop-name');
+        this.weaponIconCanvas = document.getElementById('weapon-icon');
+        this.weaponIconCtx = this.weaponIconCanvas ? this.weaponIconCanvas.getContext('2d') : null;
         this.gameOverScreen = document.getElementById('game-over');
         this.gameOverText = document.getElementById('game-over-text');
         this.restartBtn = document.getElementById('restart-btn');
@@ -84,6 +99,9 @@ class Game {
                     break;
                 case '4':
                     this.player.switchWeapon('SNIPER');
+                    break;
+                case '5':
+                    this.player.switchWeapon('MOUNTED_MG');
                     break;
             }
         });
@@ -158,8 +176,8 @@ class Game {
             // Normal gameplay - scroll and spawn
             this.scrollDistance += GAME.SCROLL_SPEED;
             this.background.update(GAME.SCROLL_SPEED);
-            this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance);
-            this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this);
+            this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player);
+            this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
 
             // Check for boss triggers
             if (!this.boss50Defeated && this.scrollDistance >= GAME.LEVEL_LENGTH * 0.5) {
@@ -170,6 +188,8 @@ class Game {
         } else if (this.state === 'boss') {
             // Boss battle - no scrolling, update boss
             this.updateBossBattle(deltaTime);
+            // Update gates during boss battle (for loot drops)
+            this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player);
         }
 
         // Check collisions
@@ -180,6 +200,24 @@ class Game {
         this.armyDisplay.textContent = this.player.army;
         this.weaponDisplay.textContent = this.player.currentWeapon.name;
         this.troopDisplay.textContent = this.player.currentTroop.name;
+
+        // Draw weapon icon
+        if (this.weaponIconCtx && this.spriteManager && this.spriteManager.loaded) {
+            const iconMap = {
+                'PISTOL': 'icon_pistol',
+                'RIFLE': 'icon_rifle',
+                'MACHINE_GUN': 'icon_mg',
+                'SNIPER': 'icon_sniper',
+                'MOUNTED_MG': 'icon_mg' // Use MG icon for Mounted MG
+            };
+            const iconKey = iconMap[this.player.weaponType];
+            const iconSprite = this.spriteManager.getSprite(iconKey);
+
+            if (iconSprite) {
+                this.weaponIconCtx.clearRect(0, 0, 32, 32);
+                this.weaponIconCtx.drawImage(iconSprite, 0, 0, 32, 32);
+            }
+        }
 
         // Check lose condition
         if (this.player.army <= 0) {
@@ -194,7 +232,7 @@ class Game {
             this.screenShake.apply(this.ctx);
 
             // Draw scrolling background
-            this.background.draw(this.ctx);
+            this.background.draw(this.ctx, this.spriteManager);
 
             // Draw playfield boundaries
             this.drawPlayfieldBoundaries();
@@ -206,17 +244,22 @@ class Game {
             this.projectileTrails.draw(this.ctx);
 
             // Draw game objects
-            this.gateManager.draw(this.ctx);
+            this.gateManager.draw(this.ctx, this.spriteManager);
             this.enemyManager.draw(this.ctx, this.spriteManager);
             this.player.draw(this.ctx, this.spriteManager);
 
-            // Draw boss if active
-            if (this.state === 'boss' && this.boss && this.boss.active) {
-                this.drawBoss();
+            // Draw boss(es) if active
+            if (this.state === 'boss') {
+                if (this.isDualBoss) {
+                    if (this.boss1 && this.boss1.active) this.drawBoss(this.boss1);
+                    if (this.boss2 && this.boss2.active) this.drawBoss(this.boss2);
+                } else if (this.boss && this.boss.active) {
+                    this.drawBoss(this.boss);
+                }
             }
 
             // Draw particles on top
-            this.particleSystem.draw(this.ctx);
+            this.particleSystem.draw(this.ctx, this.spriteManager);
 
             // Restore context (remove screen shake)
             this.ctx.restore();
@@ -227,54 +270,119 @@ class Game {
         }
     }
 
-    drawBoss() {
-        if (!this.boss || !this.boss.active) return;
+    drawBoss(boss = null) {
+        // Default to single boss if no parameter provided
+        const bossToRender = boss || this.boss;
+        if (!bossToRender || !bossToRender.active) return;
 
-        const healthPercent = this.boss.health / this.boss.maxHealth;
-        const isEnraged = healthPercent < 0.30;
+        const healthPercent = bossToRender.health / bossToRender.maxHealth;
+        // For dual bosses, enraged is based on one boss dying
+        // For single bosses, check for configured enraged states
+        let isEnraged = false;
+        let isHyperEnraged = false;
 
-        // Boss body - massive hexagon (darker when enraged)
-        let bossColor;
-        if (isEnraged) {
-            bossColor = '#660000'; // Darker red when enraged
+        if (this.isDualBoss) {
+            isEnraged = this.bossEnraged;
         } else {
-            bossColor = this.boss.isFinalBoss ? '#8B0000' : '#cc0000';
+            // Check hyper-enraged first (more critical)
+            if (this.bossHyperEnrageThreshold > 0 && healthPercent <= this.bossHyperEnrageThreshold) {
+                isHyperEnraged = true;
+                isEnraged = true; // Hyper-enraged implies enraged
+            } else if (this.bossEnraged || healthPercent < 0.30) {
+                isEnraged = true;
+            }
         }
-        this.ctx.fillStyle = bossColor;
-        this.ctx.beginPath();
-        const sides = 6;
-        const radius = this.boss.width / 2;
-        for (let i = 0; i < sides; i++) {
-            const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
-            const x = this.boss.x + radius * Math.cos(angle);
-            const y = this.boss.y + radius * Math.sin(angle);
-            if (i === 0) this.ctx.moveTo(x, y);
-            else this.ctx.lineTo(x, y);
-        }
-        this.ctx.closePath();
-        this.ctx.fill();
 
-        // Boss border (pulsing when enraged)
-        this.ctx.strokeStyle = isEnraged ? '#ff0000' : '#fff';
-        this.ctx.lineWidth = isEnraged ? 5 : 4;
-        this.ctx.stroke();
+        // Try to draw boss zombie sprite with animation
+        let drewSprite = false;
+        if (this.spriteManager && this.spriteManager.loaded) {
+            // Determine which animation frame to use
+            const frameIndex = Math.floor(bossToRender.animationTime / bossToRender.animationSpeed) % 2;
+            const frameName = frameIndex === 0 ? 'boss_zombie_frame1' : 'boss_zombie_frame2';
+            const sprite = this.spriteManager.getSprite(frameName);
+
+            if (sprite) {
+                // Rotate boss to face down, apply red tint when enraged
+                this.ctx.save();
+
+                // Red tint for enraged/hyper-enraged boss
+                if (isHyperEnraged) {
+                    // Hyper-enraged: darker, more intense red
+                    this.ctx.globalAlpha = 0.9;
+                    this.ctx.fillStyle = '#cc0000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(bossToRender.x, bossToRender.y, bossToRender.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1.0;
+                } else if (isEnraged) {
+                    // Regular enraged: lighter red
+                    this.ctx.globalAlpha = 0.7;
+                    this.ctx.fillStyle = '#ff0000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(bossToRender.x, bossToRender.y, bossToRender.width / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1.0;
+                }
+
+                drewSprite = this.spriteManager.drawSpriteRotated(
+                    this.ctx,
+                    sprite,
+                    bossToRender.x,
+                    bossToRender.y,
+                    bossToRender.width,
+                    bossToRender.height,
+                    Math.PI / 2
+                );
+                this.ctx.restore();
+            }
+        }
+
+        // Fallback to hexagon if sprite not available
+        if (!drewSprite) {
+            let bossColor;
+            if (isHyperEnraged) {
+                bossColor = '#330000'; // Very dark red when hyper-enraged
+            } else if (isEnraged) {
+                bossColor = '#660000'; // Darker red when enraged
+            } else {
+                bossColor = bossToRender.isFinalBoss ? '#8B0000' : '#cc0000';
+            }
+            this.ctx.fillStyle = bossColor;
+            this.ctx.beginPath();
+            const sides = 6;
+            const radius = bossToRender.width / 2;
+            for (let i = 0; i < sides; i++) {
+                const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+                const x = bossToRender.x + radius * Math.cos(angle);
+                const y = bossToRender.y + radius * Math.sin(angle);
+                if (i === 0) this.ctx.moveTo(x, y);
+                else this.ctx.lineTo(x, y);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+
+            // Boss border (pulsing when enraged)
+            this.ctx.strokeStyle = isEnraged ? '#ff0000' : '#fff';
+            this.ctx.lineWidth = isEnraged ? 5 : 4;
+            this.ctx.stroke();
+        }
 
         // Boss health bar
-        const barWidth = this.boss.width;
+        const barWidth = bossToRender.width;
         const barHeight = 15;
 
         this.ctx.fillStyle = '#222';
         this.ctx.fillRect(
-            this.boss.x - barWidth / 2,
-            this.boss.y - this.boss.height / 2 - 25,
+            bossToRender.x - barWidth / 2,
+            bossToRender.y - bossToRender.height / 2 - 25,
             barWidth,
             barHeight
         );
 
         this.ctx.fillStyle = isEnraged ? '#ff0000' : '#ff6666';
         this.ctx.fillRect(
-            this.boss.x - barWidth / 2,
-            this.boss.y - this.boss.height / 2 - 25,
+            bossToRender.x - barWidth / 2,
+            bossToRender.y - bossToRender.height / 2 - 25,
             barWidth * healthPercent,
             barHeight
         );
@@ -283,13 +391,19 @@ class Game {
         this.ctx.fillStyle = '#fff';
         this.ctx.font = 'bold 16px Arial';
         this.ctx.textAlign = 'center';
-        const label = this.boss.isFinalBoss ? 'ZOMBIE OVERLORD' : 'HORDE LEADER';
-        const enragedLabel = isEnraged ? label + ' [ENRAGED]' : label;
-        this.ctx.fillText(enragedLabel, this.boss.x, this.boss.y - this.boss.height / 2 - 35);
+        const label = bossToRender.isFinalBoss ? 'ZOMBIE OVERLORD' : 'HORDE LEADER';
+        let enragedLabel = label;
+        if (isHyperEnraged) {
+            enragedLabel = label + ' [RAMPAGE]';
+            this.ctx.fillStyle = '#ff0000'; // Red text for rampage
+        } else if (isEnraged) {
+            enragedLabel = label + ' [ENRAGED]';
+        }
+        this.ctx.fillText(enragedLabel, bossToRender.x, bossToRender.y - bossToRender.height / 2 - 35);
 
         // Boss HP number
         this.ctx.font = 'bold 24px Arial';
-        this.ctx.fillText(Math.ceil(this.boss.health).toString(), this.boss.x, this.boss.y);
+        this.ctx.fillText(Math.ceil(bossToRender.health).toString(), bossToRender.x, bossToRender.y);
     }
 
     drawPlayfieldBoundaries() {
@@ -340,27 +454,70 @@ class Game {
         this.state = 'boss';
         this.bossMinionTimer = 0;
 
+        // Get boss config from level
+        const bossConfig = this.currentLevel.bosses?.find(b => b.at === progress) || { at: progress, isFinal: progress >= 1.0 };
+        const isDualBoss = bossConfig.dualBoss || false;
+        const oscillate = bossConfig.oscillate || false;
+        const startEnraged = bossConfig.startEnraged || false;
+
+        this.isDualBoss = isDualBoss;
+        this.bossEnraged = startEnraged; // Start enraged if configured
+        this.bossHyperEnraged = false;
+        this.bossHyperEnrageThreshold = bossConfig.hyperEnrageAt || 0; // 0 means no hyper-enrage
+
         // Calculate boss HP based on player power
         const playerDPS = this.player.currentWeapon.damage * this.player.currentTroop.multiplier * this.player.getArmyMultiplier();
-        const targetKillTime = 30; // seconds to kill boss
-        const bossHP = Math.floor(playerDPS * targetKillTime * (1000 / this.player.currentWeapon.fireRate));
 
-        this.boss = {
-            x: GAME.WIDTH / 2,
-            y: 150,
+        // Scale kill time based on boss type
+        // Mid-boss (50%): 15 seconds, Final boss (100%): 25 seconds
+        const targetKillTime = progress >= 1.0 ? 25 : 15;
+
+        const calculatedHP = Math.floor(playerDPS * targetKillTime * (1000 / this.player.currentWeapon.fireRate));
+
+        // Set minimum HP based on boss type to prevent trivial bosses
+        const minHP = progress >= 1.0 ? 200 : 100;
+        const bossHP = Math.max(minHP, calculatedHP);
+
+        const createBossObject = (startX, oscillateDirection = 0) => ({
+            x: startX,
+            y: 250, // Move boss down so it's not under the UI overlay
             width: 150,
             height: 150,
             health: bossHP,
             maxHealth: bossHP,
             active: true,
-            isFinalBoss: progress >= 1.0
-        };
+            isFinalBoss: progress >= 1.0,
+            // Animation state
+            animationTime: 0,
+            animationSpeed: 400, // Slower animation for intimidating boss
+            // Oscillation state
+            oscillate: oscillate,
+            oscillateSpeed: 2, // pixels per frame
+            oscillateDirection: oscillateDirection // 1 = right, -1 = left
+        });
+
+        if (isDualBoss) {
+            // Create two bosses
+            this.boss1 = createBossObject(PLAYFIELD.MIN_X + 100, 1); // Start left, move right
+            this.boss2 = createBossObject(PLAYFIELD.MAX_X - 100, -1); // Start right, move left
+        } else {
+            // Single boss (existing logic)
+            this.boss = createBossObject(GAME.WIDTH / 2, 0);
+        }
 
         // Boss roar sound
         this.audioSystem.playBossRoar();
     }
 
     updateBossBattle(deltaTime) {
+        if (this.isDualBoss) {
+            this.updateDualBossBattle(deltaTime);
+        } else {
+            this.updateSingleBossBattle(deltaTime);
+        }
+    }
+
+    updateSingleBossBattle(deltaTime) {
         if (!this.boss || !this.boss.active) {
             // Safety check - if boss is gone, return to playing
             if (this.state === 'boss') {
@@ -369,20 +526,45 @@ class Game {
             return;
         }
 
-        // Check if boss is enraged (below 30% HP)
-        const healthPercent = this.boss.health / this.boss.maxHealth;
-        const isEnraged = healthPercent < 0.30;
+        // Update boss animation
+        this.boss.animationTime += deltaTime;
 
-        // Spawn minion waves - faster when enraged
-        const spawnInterval = isEnraged ? 1200 : 2000; // 1.2s when enraged, 2s normal
+        // Check boss enraged states
+        const healthPercent = this.boss.health / this.boss.maxHealth;
+        let isEnraged = this.bossEnraged || (healthPercent < 0.30);
+        let isHyperEnraged = false;
+
+        // Check for hyper-enraged transition
+        if (this.bossHyperEnrageThreshold > 0 && healthPercent <= this.bossHyperEnrageThreshold) {
+            if (!this.bossHyperEnraged) {
+                // Just entered hyper-enraged state
+                this.bossHyperEnraged = true;
+                this.audioSystem.playBossRoar(); // Dramatic roar for critical phase
+                this.screenShake.shake(15, 500); // Big screen shake
+            }
+            isHyperEnraged = true;
+            isEnraged = true;
+        }
+
+        // Spawn minion waves - slower for mid-boss, faster for final boss
+        const isFinalBoss = this.boss.isFinalBoss;
+        const baseInterval = isFinalBoss ? 2000 : 3000; // Mid-boss: 3s, Final: 2s
+        let spawnInterval = baseInterval;
+
+        if (isHyperEnraged) {
+            spawnInterval = baseInterval * 0.4; // 60% faster when hyper-enraged (was 0.6 for enraged)
+        } else if (isEnraged) {
+            spawnInterval = baseInterval * 0.6; // 40% faster when enraged
+        }
+
         this.bossMinionTimer += deltaTime;
         if (this.bossMinionTimer >= spawnInterval) {
-            this.spawnBossMinions(isEnraged);
+            this.spawnBossMinions(isEnraged, null, isHyperEnraged);
             this.bossMinionTimer = 0;
         }
 
         // Update existing enemies (minions still scroll during boss battle)
-        this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this);
+        this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
 
         // Check projectile hits on boss
         this.player.projectiles = this.player.projectiles.filter(projectile => {
@@ -415,50 +597,221 @@ class Game {
         });
     }
 
-    spawnBossMinions(isEnraged = false) {
-        if (!this.boss || !this.boss.active) return;
+    updateDualBossBattle(deltaTime) {
+        // Check if both bosses are gone
+        const boss1Dead = !this.boss1 || !this.boss1.active;
+        const boss2Dead = !this.boss2 || !this.boss2.active;
 
-        // When enraged: 50% peons, 50% tanks (more dangerous)
+        if (boss1Dead && boss2Dead) {
+            // Both bosses defeated
+            this.defeatBoss();
+            return;
+        }
+
+        // Update animation and oscillation for active bosses
+        if (this.boss1 && this.boss1.active) {
+            this.boss1.animationTime += deltaTime;
+            if (this.boss1.oscillate) {
+                this.boss1.x += this.boss1.oscillateSpeed * this.boss1.oscillateDirection;
+                // Reverse direction at boundaries
+                if (this.boss1.x <= PLAYFIELD.MIN_X + this.boss1.width / 2) {
+                    this.boss1.oscillateDirection = 1;
+                    this.boss1.x = PLAYFIELD.MIN_X + this.boss1.width / 2;
+                } else if (this.boss1.x >= PLAYFIELD.MAX_X - this.boss1.width / 2) {
+                    this.boss1.oscillateDirection = -1;
+                    this.boss1.x = PLAYFIELD.MAX_X - this.boss1.width / 2;
+                }
+            }
+        }
+
+        if (this.boss2 && this.boss2.active) {
+            this.boss2.animationTime += deltaTime;
+            if (this.boss2.oscillate) {
+                this.boss2.x += this.boss2.oscillateSpeed * this.boss2.oscillateDirection;
+                // Reverse direction at boundaries
+                if (this.boss2.x <= PLAYFIELD.MIN_X + this.boss2.width / 2) {
+                    this.boss2.oscillateDirection = 1;
+                    this.boss2.x = PLAYFIELD.MIN_X + this.boss2.width / 2;
+                } else if (this.boss2.x >= PLAYFIELD.MAX_X - this.boss2.width / 2) {
+                    this.boss2.oscillateDirection = -1;
+                    this.boss2.x = PLAYFIELD.MAX_X - this.boss2.width / 2;
+                }
+            }
+        }
+
+        // Check for enraged state (one boss dead)
+        if ((boss1Dead || boss2Dead) && !this.bossEnraged) {
+            this.bossEnraged = true;
+            this.audioSystem.playBossRoar(); // Enrage roar
+        }
+
+        // Spawn minion waves
+        const isFinalBoss = (this.boss1?.isFinalBoss || this.boss2?.isFinalBoss) || false;
+        const baseInterval = isFinalBoss ? 2000 : 3000;
+        const spawnInterval = this.bossEnraged ? baseInterval * 0.6 : baseInterval;
+
+        this.bossMinionTimer += deltaTime;
+        if (this.bossMinionTimer >= spawnInterval) {
+            // Spawn minions from both active bosses
+            if (this.boss1 && this.boss1.active) {
+                this.spawnBossMinions(this.bossEnraged, this.boss1);
+            }
+            if (this.boss2 && this.boss2.active) {
+                this.spawnBossMinions(this.bossEnraged, this.boss2);
+            }
+            this.bossMinionTimer = 0;
+        }
+
+        // Update existing enemies
+        this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
+
+        // Check projectile hits on both bosses
+        this.player.projectiles = this.player.projectiles.filter(projectile => {
+            let hitBoss = false;
+
+            // Check boss1
+            if (this.boss1 && this.boss1.active) {
+                const boss1Bounds = {
+                    x: this.boss1.x - this.boss1.width / 2,
+                    y: this.boss1.y - this.boss1.height / 2,
+                    width: this.boss1.width,
+                    height: this.boss1.height
+                };
+
+                if (this.checkCollision(projectile, boss1Bounds)) {
+                    this.boss1.health -= projectile.damage;
+
+                    // Boss hit effects
+                    this.particleSystem.createBossHitEffect(projectile.x + projectile.width / 2, projectile.y);
+                    this.audioSystem.playBossHit();
+                    this.screenShake.shake(3, 100);
+
+                    if (this.boss1.health <= 0) {
+                        this.boss1.active = false;
+                        // Boss death explosion
+                        this.particleSystem.createExplosion(this.boss1.x, this.boss1.y, '#ff0000', 30);
+                        this.audioSystem.playEnemyDeath('BOSS');
+                        this.screenShake.shake(10, 300);
+                        this.stats.enemiesKilled++;
+                    }
+
+                    hitBoss = true;
+                }
+            }
+
+            // Check boss2
+            if (this.boss2 && this.boss2.active) {
+                const boss2Bounds = {
+                    x: this.boss2.x - this.boss2.width / 2,
+                    y: this.boss2.y - this.boss2.height / 2,
+                    width: this.boss2.width,
+                    height: this.boss2.height
+                };
+
+                if (this.checkCollision(projectile, boss2Bounds)) {
+                    this.boss2.health -= projectile.damage;
+
+                    // Boss hit effects
+                    this.particleSystem.createBossHitEffect(projectile.x + projectile.width / 2, projectile.y);
+                    this.audioSystem.playBossHit();
+                    this.screenShake.shake(3, 100);
+
+                    if (this.boss2.health <= 0) {
+                        this.boss2.active = false;
+                        // Boss death explosion
+                        this.particleSystem.createExplosion(this.boss2.x, this.boss2.y, '#ff0000', 30);
+                        this.audioSystem.playEnemyDeath('BOSS');
+                        this.screenShake.shake(10, 300);
+                        this.stats.enemiesKilled++;
+                    }
+
+                    hitBoss = true;
+                }
+            }
+
+            // Remove projectile if it hit a boss (no piercing on bosses)
+            return !hitBoss;
+        });
+    }
+
+    spawnBossMinions(isEnraged = false, boss = null, isHyperEnraged = false) {
+        // Default to single boss if no boss parameter provided
+        const bossToUse = boss || this.boss;
+        if (!bossToUse || !bossToUse.active) return;
+
+        const isFinalBoss = bossToUse.isFinalBoss;
+
+        // Hyper-enraged (RAMPAGE): 0% peons, 100% tanks (pure chaos)
+        // Enraged: 50% peons, 50% tanks (more dangerous)
         // Normal: 70% peons, 30% tanks
-        const tankChance = isEnraged ? 0.50 : 0.30;
+        let tankChance = 0.30;
+        if (isHyperEnraged) {
+            tankChance = 1.0; // 100% tanks, no peons
+        } else if (isEnraged) {
+            tankChance = 0.50;
+        }
         const rand = Math.random();
 
         if (rand >= tankChance) {
-            // Spawn peon wave (more when enraged)
-            const baseCount = 3;
-            const extraCount = Math.floor(Math.random() * 3); // 0-2 extra
-            const enrageBonus = isEnraged ? 2 : 0; // +2 peons when enraged
+            // Spawn peon wave (scaled for boss type)
+            const baseCount = isFinalBoss ? 3 : 2; // Mid-boss: 2, Final: 3
+            const extraCount = Math.floor(Math.random() * (isFinalBoss ? 3 : 2)); // Mid: 0-1, Final: 0-2
+            let enrageBonus = 0;
+            if (isHyperEnraged && isFinalBoss) {
+                enrageBonus = 3; // +3 peons when hyper-enraged (critical phase)
+            } else if (isEnraged && isFinalBoss) {
+                enrageBonus = 1; // +1 when enraged
+            }
             const count = baseCount + extraCount + enrageBonus;
 
             for (let i = 0; i < count; i++) {
                 const offsetX = (i - count / 2) * 40;
-                const x = this.boss.x + offsetX;
-                const y = this.boss.y + this.boss.height / 2;
+                let x = bossToUse.x + offsetX;
+                const y = bossToUse.y + bossToUse.height / 2;
+
+                // Clamp to playfield boundaries (with small margin for enemy width)
+                x = Math.max(PLAYFIELD.MIN_X + 15, Math.min(x, PLAYFIELD.MAX_X - 15));
 
                 this.enemyManager.enemies.push(new Enemy(x, y, 1, 1, 'SMALL'));
             }
         } else {
-            // Spawn tanky unit(s) (more when enraged)
-            const baseCount = Math.random() < 0.5 ? 1 : 2;
-            const count = isEnraged ? baseCount + 1 : baseCount; // +1 tank when enraged
-            const isFinalBoss = this.boss.isFinalBoss;
+            // Spawn tanky unit(s) (more when enraged/hyper-enraged)
+            const baseCount = isFinalBoss ? (Math.random() < 0.5 ? 1 : 2) : 1; // Mid-boss: 1, Final: 1-2
+            let count = baseCount;
+            if (isHyperEnraged) {
+                count = baseCount + 2; // +2 tanks when hyper-enraged
+            } else if (isEnraged) {
+                count = baseCount + 1; // +1 tank when enraged
+            }
 
             for (let i = 0; i < count; i++) {
                 const offsetX = (i - count / 2 + 0.5) * 60;
-                const x = this.boss.x + offsetX;
-                const y = this.boss.y + this.boss.height / 2;
+                let x = bossToUse.x + offsetX;
+                const y = bossToUse.y + bossToUse.height / 2;
+
+                // Clamp to playfield boundaries (with small margin for enemy width)
+                x = Math.max(PLAYFIELD.MIN_X + 20, Math.min(x, PLAYFIELD.MAX_X - 20));
 
                 if (isFinalBoss) {
-                    // Final boss: spawn 20-50 HP tanks (higher when enraged)
-                    const minHP = isEnraged ? 30 : 20;
-                    const maxHP = isEnraged ? 60 : 50;
+                    // Final boss: spawn tanks with varying HP based on enraged state
+                    let minHP, maxHP;
+                    if (isHyperEnraged) {
+                        minHP = 30;
+                        maxHP = 60; // Hyper-enraged: much tankier minions
+                    } else if (isEnraged) {
+                        minHP = 20;
+                        maxHP = 40; // Enraged
+                    } else {
+                        minHP = 15;
+                        maxHP = 35; // Normal
+                    }
                     const health = minHP + Math.floor(Math.random() * (maxHP - minHP + 1));
                     const cost = Math.floor(health / 2);
                     this.enemyManager.enemies.push(new Enemy(x, y, health, cost, 'MEDIUM'));
                 } else {
-                    // Mid boss: spawn 5-15 HP tanks (higher when enraged)
-                    const minHP = isEnraged ? 10 : 5;
-                    const maxHP = isEnraged ? 20 : 15;
+                    // Mid boss: spawn 3-8 HP tanks (lower than before)
+                    const minHP = isEnraged ? 5 : 3;
+                    const maxHP = isEnraged ? 10 : 8;
                     const health = minHP + Math.floor(Math.random() * (maxHP - minHP + 1));
                     const cost = Math.floor(health / 2);
                     this.enemyManager.enemies.push(new Enemy(x, y, health, cost, 'MEDIUM'));
@@ -468,24 +821,69 @@ class Game {
     }
 
     defeatBoss() {
-        // Boss death explosion
-        this.particleSystem.createExplosion(this.boss.x, this.boss.y, '#ff0000', 30);
-        this.audioSystem.playEnemyDeath('BOSS');
-        this.screenShake.shake(10, 300);
+        if (this.isDualBoss) {
+            // Dual boss mode - both bosses defeated
+            const isFinalBoss = (this.boss1?.isFinalBoss || this.boss2?.isFinalBoss) || false;
 
-        this.boss.active = false;
-        this.stats.enemiesKilled++; // Count boss as kill
+            if (isFinalBoss) {
+                // Final boss defeated - victory!
+                this.boss100Defeated = true;
+                this.gameOver(true);
+            } else {
+                // Mid-boss defeated - drop loot if configured
+                this.boss50Defeated = true;
 
-        if (this.boss.isFinalBoss) {
-            // Final boss defeated - victory!
-            this.boss100Defeated = true;
-            this.gameOver(true);
+                // Check if this level has a boss loot drop configured
+                const bossConfig = this.currentLevel.bosses?.find(b => b.at === 0.5);
+                if (bossConfig?.dropLoot) {
+                    // Spawn loot gate at center of screen (where bosses were)
+                    const lootX = GAME.WIDTH / 2;
+                    const lootY = 250; // Same Y as boss position
+                    const lootGate = new Gate(lootX, lootY, bossConfig.dropLoot, this.scrollDistance);
+                    lootGate.isLoot = true; // Mark as loot so it moves toward player
+                    lootGate.lootVelocity = 2; // Speed at which it moves down
+                    this.gateManager.gates.push(lootGate);
+                }
+
+                this.enemyManager.enemies = []; // Clear all boss minions
+                this.state = 'playing';
+                this.boss1 = null;
+                this.boss2 = null;
+                this.isDualBoss = false;
+                this.bossEnraged = false;
+            }
         } else {
-            // Mid-boss defeated - clear minions and continue
-            this.boss50Defeated = true;
-            this.enemyManager.enemies = []; // Clear all boss minions
-            this.state = 'playing';
-            this.boss = null;
+            // Single boss mode
+            // Boss death explosion
+            this.particleSystem.createExplosion(this.boss.x, this.boss.y, '#ff0000', 30);
+            this.audioSystem.playEnemyDeath('BOSS');
+            this.screenShake.shake(10, 300);
+
+            this.boss.active = false;
+            this.stats.enemiesKilled++; // Count boss as kill
+
+            if (this.boss.isFinalBoss) {
+                // Final boss defeated - victory!
+                this.boss100Defeated = true;
+                this.gameOver(true);
+            } else {
+                // Mid-boss defeated - drop loot if configured
+                this.boss50Defeated = true;
+
+                // Check if this level has a boss loot drop configured
+                const bossConfig = this.currentLevel.bosses?.find(b => b.at === 0.5);
+                if (bossConfig?.dropLoot) {
+                    // Spawn loot gate at boss position
+                    const lootGate = new Gate(this.boss.x, this.boss.y, bossConfig.dropLoot, this.scrollDistance);
+                    lootGate.isLoot = true; // Mark as loot so it moves toward player
+                    lootGate.lootVelocity = 2; // Speed at which it moves down
+                    this.gateManager.gates.push(lootGate);
+                }
+
+                this.enemyManager.enemies = []; // Clear all boss minions
+                this.state = 'playing';
+                this.boss = null;
+            }
         }
     }
 
@@ -500,11 +898,19 @@ class Game {
         this.state = victory ? 'victory' : 'gameover';
 
         if (victory) {
+            // Save level completion
+            const levelStats = {
+                enemiesKilled: this.stats.enemiesKilled,
+                timeElapsed: this.stats.timeElapsed,
+                flawless: !this.damageTaken
+            };
+            const pointsEarned = saveSystem.completeLevel(this.currentLevel.id, levelStats);
+
             // Check for flawless victory (no damage taken)
             if (!this.damageTaken) {
-                this.gameOverText.textContent = 'Flawless Victory!';
+                this.gameOverText.textContent = `Flawless Victory! +${pointsEarned} Points`;
             } else {
-                this.gameOverText.textContent = 'Victory!';
+                this.gameOverText.textContent = `Victory! +${pointsEarned} Points`;
             }
             this.gameOverScreen.classList.add('victory');
             this.audioSystem.playVictory();
@@ -529,20 +935,27 @@ class Game {
         this.state = 'playing';
         this.scrollDistance = 0;
         this.boss = null;
+        this.boss1 = null;
+        this.boss2 = null;
+        this.isDualBoss = false;
+        this.bossEnraged = false;
+        this.bossHyperEnraged = false;
+        this.bossHyperEnrageThreshold = 0;
         this.bossMinionTimer = 0;
         this.boss50Defeated = false;
         this.boss100Defeated = false;
 
         // Reset stats
+        const startingSurvivors = this.currentLevel?.startingSurvivors || PLAYER.INITIAL_ARMY;
         this.stats = {
             enemiesKilled: 0,
-            maxArmy: 30,
+            maxArmy: startingSurvivors,
             timeElapsed: 0
         };
         this.damageTaken = false;
 
         // Reset game objects
-        this.player = new Player();
+        this.player = new Player(this.currentLevel);
         this.gateManager.reset();
         this.enemyManager.reset();
 
@@ -553,5 +966,15 @@ class Game {
 
 // Start the game when page loads
 window.addEventListener('load', () => {
-    new Game();
+    // Check for selected level from level select screen
+    const selectedLevelId = parseInt(sessionStorage.getItem('selectedLevel')) || 1;
+    const levelConfig = getLevel(selectedLevelId);
+
+    if (!levelConfig) {
+        console.error(`Level ${selectedLevelId} not found, defaulting to Level 1`);
+        new Game(getLevel(1));
+    } else {
+        console.log(`Loading Level ${selectedLevelId}: ${levelConfig.name}`);
+        new Game(levelConfig);
+    }
 });

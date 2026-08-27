@@ -16,7 +16,10 @@
         <div id="ui">
             <div id="stats">
                 <div id="army-count">SURVIVORS: <span id="army-number">30</span></div>
-                <div id="weapon-info">WEAPON: <span id="weapon-name">PISTOL</span></div>
+                <div id="weapon-info">
+                    <canvas id="weapon-icon" width="32" height="32" style="vertical-align: middle; margin-right: 5px; image-rendering: pixelated;"></canvas>
+                    WEAPON: <span id="weapon-name">PISTOL</span>
+                </div>
                 <div id="troop-info">TYPE: <span id="troop-name">CIVILIAN</span></div>
                 <div id="controls-hint" style="font-size: 10px; color: rgba(100, 149, 237, 0.7); margin-top: 8px;">
                     1-4: Switch Weapon | A/D: Move
@@ -31,20 +34,23 @@
                     <div class="stat-line">SURVIVOR TYPE: <span id="stat-troop">-</span></div>
                     <div class="stat-line">SURVIVAL TIME: <span id="stat-time">0s</span></div>
                 </div>
-                <button id="restart-btn">PLAY AGAIN</button>
+                <button id="level-select-btn" onclick="window.location.href='level-select.html'">CONTINUE</button>
+                <button id="restart-btn">REPLAY LEVEL</button>
             </div>
         </div>
     </div>
 
-    <script src="js/constants.js"></script>
+    <script src="js/constants.js?v=11"></script>
     <script src="js/particles.js"></script>
     <script src="js/audio-file.js?v=2"></script>
     <script src="js/effects.js"></script>
     <script src="js/sprites.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/gates.js"></script>
+    <script src="js/player.js?v=10"></script>
+    <script src="js/gates.js?v=16"></script>
     <script src="js/enemies.js"></script>
-    <script src="js/game.js"></script>
+    <script src="js/levels.js?v=12"></script>
+    <script src="js/save.js"></script>
+    <script src="js/game.js?v=13"></script>
     <script>
         // Capture console errors and display on screen
         const errorDisplay = document.getElementById('error-display');

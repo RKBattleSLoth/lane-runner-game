@@ -126,7 +126,7 @@ body {
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
-#restart-btn {
+#level-select-btn {
     padding: 14px 35px;
     font-size: 18px;
     background: linear-gradient(135deg, #00ff88 0%, #00dd77 100%);
@@ -139,12 +139,37 @@ body {
     font-family: 'Orbitron', sans-serif;
     transition: all 0.3s;
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    margin-bottom: 10px;
 }
 
-#restart-btn:hover {
+#level-select-btn:hover {
     background: linear-gradient(135deg, #00ffaa 0%, #00ee88 100%);
     transform: translateY(-2px);
     box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+}
+
+#level-select-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+#restart-btn {
+    padding: 10px 25px;
+    font-size: 14px;
+    background: rgba(100, 100, 100, 0.4);
+    color: #bbb;
+    border: 2px solid rgba(100, 100, 100, 0.6);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+    transition: all 0.3s;
+}
+
+#restart-btn:hover {
+    background: rgba(100, 100, 100, 0.6);
+    color: #fff;
+    transform: translateY(-1px);
 }
 
 #restart-btn:active {

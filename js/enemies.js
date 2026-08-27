@@ -13,19 +13,30 @@ class Enemy {
         this.maxHealth = health;
         this.cost = cost; // How many troops needed to destroy on collision
         this.active = true;
+
+        // Animation state
+        this.animationTime = Math.random() * 500; // Random start for variety
+        this.animationSpeed = 300; // ms per frame
     }
 
-    update(scrollSpeed) {
+    update(scrollSpeed, deltaTime) {
         this.y += scrollSpeed;
+
+        // Update animation timer
+        this.animationTime += deltaTime || 16;
     }
 
     draw(ctx, spriteManager) {
         if (!this.active) return;
 
-        // Try to draw zombie sprite, fallback to colored shape
+        // Try to draw zombie sprite with animation, fallback to colored shape
         let drewSprite = false;
         if (spriteManager && spriteManager.loaded) {
-            const zombieSprite = spriteManager.getSprite('zombie');
+            // Determine which animation frame to use
+            const frameIndex = Math.floor(this.animationTime / this.animationSpeed) % 2;
+            const frameName = frameIndex === 0 ? 'zombie_frame1' : 'zombie_frame2';
+            const zombieSprite = spriteManager.getSprite(frameName);
+
             if (zombieSprite) {
                 // Rotate zombie to face down (90 degrees)
                 drewSprite = spriteManager.drawSpriteRotated(ctx, zombieSprite, this.x, this.y, this.width, this.height, Math.PI / 2);
@@ -136,15 +147,18 @@ class Enemy {
 }
 
 class EnemyManager {
-    constructor() {
+    constructor(levelConfig = null) {
         this.enemies = [];
         this.lastSpawnY = 0;
+        this.levelConfig = levelConfig;
     }
 
-    update(scrollSpeed, scrollDistance, player, game) {
+    update(scrollSpeed, scrollDistance, player, game, deltaTime) {
         // Update existing enemies
         this.enemies.forEach(enemy => {
-            enemy.update(scrollSpeed);
+            // Apply zombie speed multiplier from level config
+            const speedMultiplier = this.levelConfig?.difficulty?.zombieSpeed || 1.0;
+            enemy.update(scrollSpeed * speedMultiplier, deltaTime);
 
             // Check if enemy escaped (reached bottom)
             if (enemy.hasEscaped()) {
@@ -157,8 +171,11 @@ class EnemyManager {
 
         // Constant stream spawning - very frequent, individual enemies
         const progress = Math.min(scrollDistance / GAME.LEVEL_LENGTH, 1);
-        // Start at 45px interval, ramp down to 18px for dense horde
-        const currentSpawnInterval = 45 - (progress * 27);
+
+        // Use level config spawn intervals or default
+        const spawnStart = this.levelConfig?.difficulty?.spawnIntervalStart || 45;
+        const spawnEnd = this.levelConfig?.difficulty?.spawnIntervalEnd || 18;
+        const currentSpawnInterval = spawnStart - (progress * (spawnStart - spawnEnd));
 
         // Spawn new enemies
         if (scrollDistance - this.lastSpawnY > currentSpawnInterval) {
@@ -179,34 +196,36 @@ class EnemyManager {
 
     spawnEnemy(scrollDistance) {
         // Spawn INDIVIDUAL enemies in a constant stream
-        // 90% peons, 7% medium, 3% boss
+        // Use level config zombie types or default (90% small, 7% medium, 3% boss)
+        const zombieTypes = this.levelConfig?.zombieTypes || { small: 0.90, medium: 0.07, boss: 0.03 };
         const rand = Math.random();
         let enemyType;
 
-        if (rand < 0.90) {
+        if (rand < zombieTypes.small) {
             enemyType = 'SMALL'; // Peons - the horde
-        } else if (rand < 0.97) {
+        } else if (rand < zombieTypes.small + zombieTypes.medium) {
             enemyType = 'MEDIUM'; // Tougher enemies
         } else {
             enemyType = 'BOSS'; // Mini-bosses
         }
 
-        // Milestone-based scaling - NO SCALING until player gets upgrades
+        // Milestone-based scaling - Use level config scaling start or default (0.40)
         const progress = Math.min(scrollDistance / GAME.LEVEL_LENGTH, 1);
+        const scalingStart = this.levelConfig?.difficulty?.scalingStart || 0.40;
         let scalingFactor;
 
-        if (progress < 0.40) {
+        if (progress < scalingStart) {
             // Early game: ZERO scaling - keep enemies trivial
             scalingFactor = 0;
-        } else if (progress < 0.60) {
+        } else if (progress < scalingStart + 0.20) {
             // Mid game ramp up: 0 to 0.3
-            scalingFactor = ((progress - 0.40) / 0.20) * 0.3;
-        } else if (progress < 0.80) {
+            scalingFactor = ((progress - scalingStart) / 0.20) * 0.3;
+        } else if (progress < scalingStart + 0.40) {
             // Late game: 0.3 to 0.7
-            scalingFactor = 0.3 + ((progress - 0.60) / 0.20) * 0.4;
+            scalingFactor = 0.3 + ((progress - (scalingStart + 0.20)) / 0.20) * 0.4;
         } else {
             // End game: 0.7 to 1.0
-            scalingFactor = 0.7 + ((progress - 0.80) / 0.20) * 0.3;
+            scalingFactor = 0.7 + ((progress - (scalingStart + 0.40)) / 0.20) * 0.3;
         }
 
         // Base health and cost ranges
@@ -224,18 +243,26 @@ class EnemyManager {
         let health, cost;
 
         if (enemyType === 'SMALL') {
-            // Peons: ALWAYS 1 HP - never scale, pure fodder
+            // Peons: ALWAYS 1 HP, 1 cost - never scale, pure fodder
             health = 1;
             cost = 1;
         } else if (enemyType === 'MEDIUM') {
             // Medium: 2-3 HP early, scales moderately
-            health = progress < 0.40 ? 2 : Math.max(2, Math.ceil(minHealth * 1.5));
-            cost = Math.max(1, Math.floor(minCost * 1.3));
+            // Base cost: 5 (much more threatening than peons)
+            health = progress < scalingStart ? 2 : Math.max(2, Math.ceil(minHealth * 1.5));
+            const baseCost = 5;
+            cost = progress < scalingStart ? baseCost : Math.max(baseCost, Math.floor(baseCost + minCost * 0.5));
         } else {
-            // Boss: 5-10 HP early, scales more
-            health = progress < 0.40 ? (5 + Math.floor(Math.random() * 6)) : Math.max(8, Math.ceil(minHealth * 3));
-            cost = Math.max(2, Math.floor(minCost * 2));
+            // Boss mini-zombies: 5-10 HP early, scales more
+            // Base cost: 10 (very dangerous)
+            health = progress < scalingStart ? (5 + Math.floor(Math.random() * 6)) : Math.max(8, Math.ceil(minHealth * 3));
+            const baseCost = 10;
+            cost = progress < scalingStart ? baseCost : Math.max(baseCost, Math.floor(baseCost + minCost));
         }
+
+        // Apply level health multiplier if present
+        const healthMultiplier = this.levelConfig?.difficulty?.healthMultiplier || 1.0;
+        health = Math.max(1, Math.floor(health * healthMultiplier)); // Always at least 1 HP
 
         this.enemies.push(new Enemy(x, y, health, cost, enemyType));
     }
@@ -263,9 +290,9 @@ class EnemyManager {
                     enemy.active = false;
                     if (game) {
                         game.stats.enemiesKilled++;
-                        // Enemy death effects (collision)
+                        // Enemy death effects (collision) - use blood splatter
                         if (game.particleSystem) {
-                            game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8);
+                            game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8, true);
                         }
                         if (game.audioSystem) {
                             game.audioSystem.playEnemyDeath(enemy.type);
@@ -287,9 +314,9 @@ class EnemyManager {
                     if (killed) {
                         if (game) {
                             game.stats.enemiesKilled++;
-                            // Enemy death effects (projectile)
+                            // Enemy death effects (projectile) - use blood splatter
                             if (game.particleSystem) {
-                                game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8);
+                                game.particleSystem.createExplosion(enemy.x, enemy.y, enemy.color, 8, true);
                             }
                             if (game.audioSystem) {
                                 game.audioSystem.playEnemyDeath(enemy.type);
