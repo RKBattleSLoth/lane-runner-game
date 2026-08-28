@@ -569,8 +569,10 @@ class Game {
             this.bossMinionTimer = 0;
         }
 
-        // Update existing enemies (minions still scroll during boss battle)
-        this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
+        // Update existing enemies (minions scroll faster during boss battle for intensity)
+        // 1.5x speed multiplier makes boss battles more challenging
+        const bossEnemySpeed = GAME.SCROLL_SPEED * 1.5;
+        this.enemyManager.update(bossEnemySpeed, this.scrollDistance, this.player, this, deltaTime);
 
         // Check projectile hits on boss
         this.player.projectiles = this.player.projectiles.filter(projectile => {
@@ -671,8 +673,10 @@ class Game {
             this.bossMinionTimer = 0;
         }
 
-        // Update existing enemies
-        this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
+        // Update existing enemies (minions scroll faster during boss battle for intensity)
+        // 1.5x speed multiplier makes boss battles more challenging
+        const bossEnemySpeed = GAME.SCROLL_SPEED * 1.5;
+        this.enemyManager.update(bossEnemySpeed, this.scrollDistance, this.player, this, deltaTime);
 
         // Check projectile hits on both bosses
         this.player.projectiles = this.player.projectiles.filter(projectile => {
