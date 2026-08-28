@@ -7,14 +7,14 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from the current directory
 app.use(express.static(__dirname));
 
-// Serve index.html for the root route
+// Serve level-select.html for the root route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'level-select.html'));
 });
 
-// Serve level-select.html
-app.get('/level-select.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'level-select.html'));
+// Serve the game page
+app.get('/game.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server

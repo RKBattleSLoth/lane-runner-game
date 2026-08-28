@@ -57,7 +57,8 @@ const LEVELS = {
             bgTileRange: [1, 20], // All levels use same tiles for now
             color: '#2a2a2a'
         },
-        unlocked: true
+        requiredLevel: 1,
+        unlocked: false
     },
 
     3: {
@@ -88,7 +89,8 @@ const LEVELS = {
             bgTileRange: [1, 20],
             color: '#151515'
         },
-        unlocked: true
+        requiredLevel: 2,
+        unlocked: false
     },
 
     4: {
@@ -119,7 +121,8 @@ const LEVELS = {
             bgTileRange: [1, 20],
             color: '#1a1a20'
         },
-        unlocked: true
+        requiredLevel: 3,
+        unlocked: false
     },
 
     5: {
@@ -158,7 +161,8 @@ const LEVELS = {
             bgTileRange: [1, 20],
             color: '#0a0a0a'
         },
-        unlocked: true
+        requiredLevel: 4,
+        unlocked: false
     }
 };
 
