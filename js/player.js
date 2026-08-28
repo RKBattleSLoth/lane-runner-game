@@ -40,6 +40,9 @@ class Player {
     }
 
     update(deltaTime, keys, game) {
+        // Normalize deltaTime for 60 FPS (16.67ms per frame)
+        const normalizedDelta = deltaTime / 16.67;
+
         // Horizontal movement
         this.velocityX = 0;
         if (keys['a'] || keys['arrowleft']) {
@@ -49,8 +52,8 @@ class Player {
             this.velocityX = PLAYER.MOVE_SPEED;
         }
 
-        // Update position with boundaries
-        this.x += this.velocityX;
+        // Update position with boundaries (frame-rate independent)
+        this.x += this.velocityX * normalizedDelta;
         this.x = Math.max(PLAYFIELD.MIN_X + this.width / 2,
                          Math.min(this.x, PLAYFIELD.MAX_X - this.width / 2));
 
@@ -61,15 +64,15 @@ class Player {
             this.lastFireTime = 0;
         }
 
-        // Update projectiles (add trails if game provided)
+        // Update projectiles (add trails if game provided) - frame-rate independent
         this.projectiles = this.projectiles.filter(p => {
             // Check if projectile has custom velocity (multi-directional weapon)
             if (p.velocityX !== undefined && p.velocityY !== undefined) {
-                p.x += p.velocityX;
-                p.y += p.velocityY;
+                p.x += p.velocityX * normalizedDelta;
+                p.y += p.velocityY * normalizedDelta;
             } else {
                 // Standard upward movement
-                p.y -= PROJECTILES.SPEED;
+                p.y -= PROJECTILES.SPEED * normalizedDelta;
             }
 
             if (game && game.projectileTrails) {

@@ -614,11 +614,14 @@ class Game {
             return;
         }
 
-        // Update animation and oscillation for active bosses
+        // Normalize deltaTime for 60 FPS
+        const normalizedDelta = deltaTime / 16.67;
+
+        // Update animation and oscillation for active bosses (frame-rate independent)
         if (this.boss1 && this.boss1.active) {
             this.boss1.animationTime += deltaTime;
             if (this.boss1.oscillate) {
-                this.boss1.x += this.boss1.oscillateSpeed * this.boss1.oscillateDirection;
+                this.boss1.x += this.boss1.oscillateSpeed * this.boss1.oscillateDirection * normalizedDelta;
                 // Reverse direction at boundaries
                 if (this.boss1.x <= PLAYFIELD.MIN_X + this.boss1.width / 2) {
                     this.boss1.oscillateDirection = 1;
@@ -633,7 +636,7 @@ class Game {
         if (this.boss2 && this.boss2.active) {
             this.boss2.animationTime += deltaTime;
             if (this.boss2.oscillate) {
-                this.boss2.x += this.boss2.oscillateSpeed * this.boss2.oscillateDirection;
+                this.boss2.x += this.boss2.oscillateSpeed * this.boss2.oscillateDirection * normalizedDelta;
                 // Reverse direction at boundaries
                 if (this.boss2.x <= PLAYFIELD.MIN_X + this.boss2.width / 2) {
                     this.boss2.oscillateDirection = 1;
