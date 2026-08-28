@@ -154,6 +154,10 @@ class Game {
     update(deltaTime) {
         if (this.state === 'gameover' || this.state === 'victory') return;
 
+        // Normalize deltaTime for 60 FPS (16.67ms per frame)
+        // This makes game speed consistent across different frame rates
+        const normalizedDelta = deltaTime / 16.67;
+
         // Track stats
         this.stats.timeElapsed += deltaTime / 1000; // Convert to seconds
         if (this.player.army > this.stats.maxArmy) {
@@ -173,11 +177,12 @@ class Game {
         this.player.update(deltaTime, this.keys, this);
 
         if (this.state === 'playing') {
-            // Normal gameplay - scroll and spawn
-            this.scrollDistance += GAME.SCROLL_SPEED;
-            this.background.update(GAME.SCROLL_SPEED);
-            this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player);
-            this.enemyManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player, this, deltaTime);
+            // Normal gameplay - scroll and spawn (frame-rate independent)
+            const frameScrollSpeed = GAME.SCROLL_SPEED * normalizedDelta;
+            this.scrollDistance += frameScrollSpeed;
+            this.background.update(frameScrollSpeed);
+            this.gateManager.update(frameScrollSpeed, this.scrollDistance, this.player);
+            this.enemyManager.update(frameScrollSpeed, this.scrollDistance, this.player, this, deltaTime);
 
             // Check for boss triggers
             if (!this.boss50Defeated && this.scrollDistance >= GAME.LEVEL_LENGTH * 0.5) {
@@ -189,7 +194,8 @@ class Game {
             // Boss battle - no scrolling, update boss
             this.updateBossBattle(deltaTime);
             // Update gates during boss battle (for loot drops)
-            this.gateManager.update(GAME.SCROLL_SPEED, this.scrollDistance, this.player);
+            const frameScrollSpeed = GAME.SCROLL_SPEED * normalizedDelta;
+            this.gateManager.update(frameScrollSpeed, this.scrollDistance, this.player);
         }
 
         // Check collisions
