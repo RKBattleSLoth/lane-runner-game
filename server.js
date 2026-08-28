@@ -4,15 +4,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Redirect root to level select BEFORE static middleware
+app.get('/', (req, res) => {
+    res.redirect('/level-select.html');
+});
+
 // Serve static files from the current directory
 app.use(express.static(__dirname));
 
-// Serve level-select.html for the root route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'level-select.html'));
-});
-
-// Serve the game page
+// Serve the game page at /game.html (maps to index.html)
 app.get('/game.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
