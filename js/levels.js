@@ -5,7 +5,7 @@ const LEVELS = {
         name: "City Streets",
         description: "Survive the initial outbreak in the city",
         length: 6000,
-        scrollSpeed: 0.7,
+        scrollSpeed: 1.4,
         difficulty: {
             spawnIntervalStart: 45,
             spawnIntervalEnd: 18,
@@ -33,7 +33,7 @@ const LEVELS = {
         name: "Highway Evacuation",
         description: "Fast zombies chase fleeing vehicles",
         length: 7000,
-        scrollSpeed: 0.9,
+        scrollSpeed: 1.8,
         difficulty: {
             spawnIntervalStart: 55, // Much slower spawn rate (was 40)
             spawnIntervalEnd: 25, // Less dense at end (was 15)
@@ -66,7 +66,7 @@ const LEVELS = {
         name: "Shopping Mall",
         description: "Dense horde, overwhelming numbers",
         length: 8000,
-        scrollSpeed: 0.7,
+        scrollSpeed: 1.4,
         difficulty: {
             spawnIntervalStart: 35,
             spawnIntervalEnd: 12,
@@ -98,7 +98,7 @@ const LEVELS = {
         name: "Hospital Outbreak",
         description: "Tank zombies and hazmat horrors",
         length: 9000,
-        scrollSpeed: 0.6,
+        scrollSpeed: 1.2,
         startingSurvivors: 100, // More survivors to handle tankier zombies
         difficulty: {
             spawnIntervalStart: 40,
@@ -130,7 +130,7 @@ const LEVELS = {
         name: "Military Base - Boss Rush",
         description: "Face the ultimate horde",
         length: 10000,
-        scrollSpeed: 0.8,
+        scrollSpeed: 1.6,
         startingWeapon: 'RIFLE', // Start with Rifle
         startingTroop: 'TANK', // Start with Military troops
         difficulty: {

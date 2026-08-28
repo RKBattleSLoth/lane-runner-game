@@ -498,7 +498,7 @@ class Game {
             animationSpeed: 400, // Slower animation for intimidating boss
             // Oscillation state
             oscillate: oscillate,
-            oscillateSpeed: 2, // pixels per frame
+            oscillateSpeed: 4, // Increased for 60 FPS baseline (was 2)
             oscillateDirection: oscillateDirection // 1 = right, -1 = left
         });
 

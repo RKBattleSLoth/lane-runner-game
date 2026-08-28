@@ -2,7 +2,7 @@
 const GAME = {
     WIDTH: 400,
     HEIGHT: 800,
-    SCROLL_SPEED: 0.7, // Slowed down to 1/3 of original
+    SCROLL_SPEED: 1.4, // Increased for 60 FPS baseline (was 0.7)
     LEVEL_LENGTH: 10000, // pixels until level end
 };
 
@@ -11,7 +11,7 @@ const PLAYER = {
     HEIGHT: 40,
     COLOR: '#8B7355', // Survivor - tan/brown human color
     INITIAL_ARMY: 30,
-    MOVE_SPEED: 2.5, // pixels per frame - reduced for better control
+    MOVE_SPEED: 5.0, // Increased for 60 FPS baseline (was 2.5)
     FIRE_RATE: 150, // milliseconds between shots
 
     // Survivor squad multipliers (defined in player.js getArmyMultiplier):
@@ -160,5 +160,5 @@ const PROJECTILES = {
     // Width is now dynamic based on troop type (Soldier: 8px, Specialist: 12px, Tank: 16px)
     HEIGHT: 16,
     COLOR: '#ffff00',
-    SPEED: 5, // Slowed down proportionally
+    SPEED: 10, // Increased for 60 FPS baseline (was 5)
 };
